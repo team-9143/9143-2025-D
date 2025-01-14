@@ -11,10 +11,19 @@ package frc.robot;
 public final class Constants {
 
   // Constants related to operator input devices like controllers and button mappings.
-  public static class OperatorConstants {}
+  public static class OperatorConstants {
+
+    public static final int DRIVER_PORT = 0;
+    public static final int OPERATOR_PORT = 1;
+
+  }
   
   // Constants defining IDs and ports for motors, sensors, and other devices.
-  public static class DeviceConstants {}
+  public static class DeviceConstants {
+    
+    public static final int CANDLE_ID = 3;
+
+  }
 
   // Constants specifying physical dimensions and characteristics of the robot.
   public static class PhysicalConstants {}
