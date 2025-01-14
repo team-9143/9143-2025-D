@@ -30,4 +30,23 @@ public final class Constants {
 
   // Constants for motor configurations, such as gear ratios and current limits.
   public static class MotorConstants {}
+
+  // Constants for the elevator subsystem (built off of FRC 3255)
+  public static class ElevatorConstants {
+
+    public static final int LEFT_ELEVATOR_ID = 8;
+    public static final int RIGHT_ELEVATOR_ID = 9;
+    
+    // Motor configurations
+    public static final boolean LEFT_MOTOR_INVERTED = true;
+    public static final boolean RIGHT_MOTOR_INVERTED = false;
+    public static final com.ctre.phoenix.motorcontrol.NeutralMode NEUTRAL_MODE =
+            com.ctre.phoenix.motorcontrol.NeutralMode.Brake;
+
+    // Limit switch configurations
+    public static final boolean FORWARD_SOFT_LIMIT_ENABLE = true;
+    public static final int FORWARD_SOFT_LIMIT = 20000; // Example value
+    public static final boolean REVERSE_SOFT_LIMIT_ENABLE = true;
+    public static final int REVERSE_SOFT_LIMIT = 0; // Example value
+  }
 }
