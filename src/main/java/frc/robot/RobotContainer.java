@@ -74,7 +74,15 @@ public class RobotContainer {
 
         operator_controller.y().onTrue(Commands.runOnce(() -> elevator.setPosition(20), elevator));
         operator_controller.a().onTrue(Commands.runOnce(() -> elevator.setPosition(4), elevator));
-        operator_controller.start().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
+        operator_controller.x().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
+        
+        // Bind joystick movement to manual control of the elevator
+        elevator.setDefaultCommand(Commands.run(() -> {
+            // Use the joystick's Y-axis value to control the elevator's speed
+            double speed = -operator_controller.getLeftY(); // Negative to correct axis inversion
+            elevator.manualControl(speed);
+        }, elevator));
+
     }
 
     public Command getAutonomousCommand() {

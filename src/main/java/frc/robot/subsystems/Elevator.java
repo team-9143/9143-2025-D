@@ -91,6 +91,7 @@ public class Elevator extends TimedRobot implements Subsystem {
             SmartDashboard.putBoolean("Reset Encoder", false);
         }
 
+        /*
         boolean manualControl = SmartDashboard.getBoolean("Manual Control", true);
 
         if (manualControl) {
@@ -104,6 +105,7 @@ public class Elevator extends TimedRobot implements Subsystem {
             leftController.setReference(targetPosition, ControlType.kPosition);
             rightController.setReference(targetPosition, ControlType.kPosition);
         }
+        */
 
         // Display encoder positions on the dashboard
         SmartDashboard.putNumber("Left Encoder Position", leftEncoder.getPosition());
@@ -118,6 +120,11 @@ public class Elevator extends TimedRobot implements Subsystem {
     public void resetEncoders() {
         leftEncoder.setPosition(0);
         rightEncoder.setPosition(0);
+    }
+
+    public void manualControl(double speed) {
+        leftMotor.set(speed);
+        rightMotor.set(speed);
     }
 
     @Override
