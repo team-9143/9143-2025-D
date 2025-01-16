@@ -4,63 +4,126 @@
 
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.FollowerType;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.SparkBase.ControlType;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkClosedLoopController;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
+import edu.wpi.first.wpilibj2.command.Subsystem;
 import frc.robot.Constants.ElevatorConstants;
 
-public class Elevator extends SubsystemBase {
-    final WPI_TalonSRX leftMotorFollower;
-    final WPI_TalonSRX rightMotorLeader;
+public class Elevator extends TimedRobot implements Subsystem {
 
-  /** Creates a new Elevator. */
-  public Elevator() {
-    // Initialize motors
-    leftMotorFollower = new WPI_TalonSRX(ElevatorConstants.LEFT_ELEVATOR_ID);
-    rightMotorLeader = new WPI_TalonSRX(ElevatorConstants.RIGHT_ELEVATOR_ID);
+    private SparkMax leftMotor;
+    private SparkMax rightMotor;
+    private RelativeEncoder leftEncoder;
+    private RelativeEncoder rightEncoder;
+    private SparkClosedLoopController leftController;
+    private SparkClosedLoopController rightController;
+    private SparkMaxConfig leftConfig;
+    private SparkMaxConfig rightConfig;
 
-    // Reset to factory defaults
-    leftMotorFollower.configFactoryDefault();
-    rightMotorLeader.configFactoryDefault();
+    public Elevator() {
 
-    // Configure follower
-    leftMotorFollower.follow(rightMotorLeader, FollowerType.PercentOutput);
+        // Initialize the motors
+        leftMotor = new SparkMax(ElevatorConstants.LEFT_ELEVATOR_ID, MotorType.kBrushless);
+        rightMotor = new SparkMax(ElevatorConstants.RIGHT_ELEVATOR_ID, MotorType.kBrushless);
 
-    // Configure neutral mode (brake)
-    leftMotorFollower.setNeutralMode(ElevatorConstants.NEUTRAL_MODE);
-    rightMotorLeader.setNeutralMode(ElevatorConstants.NEUTRAL_MODE);
+        // Configure the motors
+        leftConfig = new SparkMaxConfig();
+        rightConfig = new SparkMaxConfig();
 
-    // Configure inverted behavior
-    leftMotorFollower.setInverted(ElevatorConstants.LEFT_MOTOR_INVERTED);
-    rightMotorLeader.setInverted(ElevatorConstants.RIGHT_MOTOR_INVERTED);
+        configureMotor(leftMotor, leftConfig, true);  // Inverted motor
+        configureMotor(rightMotor, rightConfig, false); // Non-inverted motor
 
-    // Configure limit switches
-    rightMotorLeader.configForwardSoftLimitEnable(ElevatorConstants.FORWARD_SOFT_LIMIT_ENABLE);
-    rightMotorLeader.configForwardSoftLimitThreshold(ElevatorConstants.FORWARD_SOFT_LIMIT);
-    rightMotorLeader.configReverseSoftLimitEnable(ElevatorConstants.REVERSE_SOFT_LIMIT_ENABLE);
-    rightMotorLeader.configReverseSoftLimitThreshold(ElevatorConstants.REVERSE_SOFT_LIMIT);
-  }
+        // Get encoders and controllers
+        leftEncoder = leftMotor.getEncoder();
+        rightEncoder = rightMotor.getEncoder();
+        leftController = leftMotor.getClosedLoopController();
+        rightController = rightMotor.getClosedLoopController();
 
-  public void setPosition(double setpoint) {
-    // Use Motion Magic or Position control for precise positioning
-    rightMotorLeader.set(ControlMode.Position, setpoint);
-  }
+        // Set up SmartDashboard controls
+        SmartDashboard.setDefaultNumber("Target Position", 0);
+        SmartDashboard.setDefaultBoolean("Manual Control", true);
+        SmartDashboard.setDefaultNumber("Manual Speed", 0);
+        SmartDashboard.setDefaultBoolean("Reset Encoder", false);
+    }
 
-  public void resetSensorPosition() {
-    rightMotorLeader.setSelectedSensorPosition(0);
-    leftMotorFollower.setSelectedSensorPosition(0);
-  }
+    private void configureMotor(SparkMax motor, SparkMaxConfig config, boolean isInverted) {
 
-  @Override
-  public void periodic() {
-    // Output diagnostics to SmartDashboard
-    SmartDashboard.putNumber("Elevator/Right/Position", rightMotorLeader.getSelectedSensorPosition());
-    SmartDashboard.putNumber("Elevator/Left/Position", leftMotorFollower.getSelectedSensorPosition());
-    SmartDashboard.putNumber("Elevator/Right/Current", rightMotorLeader.getStatorCurrent());
-    SmartDashboard.putNumber("Elevator/Left/Current", leftMotorFollower.getStatorCurrent());
-  }
+        // Configure inversion and brake mode
+        config.inverted(isInverted)
+              .idleMode(IdleMode.kBrake)
+              .smartCurrentLimit(60); // Set current limit to 60 amps
+
+        // Configure the encoder
+        config.encoder.positionConversionFactor(1)
+                      .velocityConversionFactor(1);
+
+        // Configure closed loop controller
+        config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+              .p(ElevatorConstants.ELEVATOR_kP) // Position PID
+              .i(ElevatorConstants.ELEVATOR_kI)
+              .d(ElevatorConstants.ELEVATOR_kD)
+              .outputRange(-1, 1)
+              .maxMotion.maxVelocity(ElevatorConstants.ELEVATOR_MAX_VELOCITY)
+              .maxAcceleration(ElevatorConstants.ELEVATOR_MAX_ACCELERATION)
+              .allowedClosedLoopError(ElevatorConstants.ELEVATOR_ALLOWED_ERROR);
+
+        // Apply configuration
+        motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
+    }
+
+    @Override
+    public void teleopPeriodic() {
+
+        if (SmartDashboard.getBoolean("Reset Encoder", false)) {
+            leftEncoder.setPosition(0);
+            rightEncoder.setPosition(0);
+            SmartDashboard.putBoolean("Reset Encoder", false);
+        }
+
+        boolean manualControl = SmartDashboard.getBoolean("Manual Control", true);
+
+        if (manualControl) {
+            // Manual control
+            double manualSpeed = SmartDashboard.getNumber("Manual Speed", 0);
+            leftMotor.set(manualSpeed);
+            rightMotor.set(manualSpeed);
+        } else {
+            // Position control
+            double targetPosition = SmartDashboard.getNumber("Target Position", 0);
+            leftController.setReference(targetPosition, ControlType.kPosition);
+            rightController.setReference(targetPosition, ControlType.kPosition);
+        }
+
+        // Display encoder positions on the dashboard
+        SmartDashboard.putNumber("Left Encoder Position", leftEncoder.getPosition());
+        SmartDashboard.putNumber("Right Encoder Position", rightEncoder.getPosition());
+    }
+
+    public void setPosition(double targetPosition) {
+        leftController.setReference(targetPosition, ControlType.kPosition);
+        rightController.setReference(targetPosition, ControlType.kPosition);
+    }
+
+    public void resetEncoders() {
+        leftEncoder.setPosition(0);
+        rightEncoder.setPosition(0);
+    }
+
+    @Override
+    public void robotPeriodic() {
+        // Update encoder values for monitoring
+        SmartDashboard.putNumber("Left Encoder Position", leftEncoder.getPosition());
+        SmartDashboard.putNumber("Right Encoder Position", rightEncoder.getPosition());
+    }
 }

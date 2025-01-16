@@ -36,17 +36,15 @@ public final class Constants {
 
     public static final int LEFT_ELEVATOR_ID = 8;
     public static final int RIGHT_ELEVATOR_ID = 9;
-    
-    // Motor configurations
-    public static final boolean LEFT_MOTOR_INVERTED = true;
-    public static final boolean RIGHT_MOTOR_INVERTED = false;
-    public static final com.ctre.phoenix.motorcontrol.NeutralMode NEUTRAL_MODE =
-            com.ctre.phoenix.motorcontrol.NeutralMode.Brake;
 
-    // Limit switch configurations
-    public static final boolean FORWARD_SOFT_LIMIT_ENABLE = true;
-    public static final int FORWARD_SOFT_LIMIT = 20000; // Example value
-    public static final boolean REVERSE_SOFT_LIMIT_ENABLE = true;
-    public static final int REVERSE_SOFT_LIMIT = 0; // Example value
+    // PID values for position control
+    public static final double ELEVATOR_kP = 0.4;
+    public static final double ELEVATOR_kI = 0.0;
+    public static final double ELEVATOR_kD = 0.0;
+
+    // MAXMotion parameters
+    public static final double ELEVATOR_MAX_VELOCITY = 1000.0; // Encoder units per second
+    public static final double ELEVATOR_MAX_ACCELERATION = 1000.0; // Encoder units per second squared
+    public static final double ELEVATOR_ALLOWED_ERROR = 1.0; // Tolerance in encoder units
   }
 }
