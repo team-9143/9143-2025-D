@@ -34,8 +34,8 @@ public final class Constants {
   // Constants for the elevator subsystem (built off of FRC 3255)
   public static class ElevatorConstants {
 
-    public static final int LEFT_ELEVATOR_ID = 8;
-    public static final int RIGHT_ELEVATOR_ID = 9;
+    public static final int LEFT_ELEVATOR_ID = 58;
+    public static final int RIGHT_ELEVATOR_ID = 59;
 
     // PID values for position control
     public static final double ELEVATOR_kP = 0.4;
