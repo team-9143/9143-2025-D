@@ -33,7 +33,7 @@ public class RobotContainer {
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
     private final CommandXboxController driver_controller = new CommandXboxController(0);
-    private final CommandXboxController operator_controller = new CommandXboxController(0);
+    private final CommandXboxController operator_controller = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
