@@ -53,4 +53,4 @@ public class CANivore {
             private Object applyDefaultConfiguration() {
                             return gyro;
             }
-        }
+}
