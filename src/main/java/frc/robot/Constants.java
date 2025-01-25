@@ -30,4 +30,21 @@ public final class Constants {
 
   // Constants for motor configurations, such as gear ratios and current limits.
   public static class MotorConstants {}
+
+  // Constants for the elevator subsystem (built off of FRC 3255)
+  public static class ElevatorConstants {
+
+    public static final int LEFT_ELEVATOR_ID = 58;
+    public static final int RIGHT_ELEVATOR_ID = 59;
+
+    // PID values for position control
+    public static final double ELEVATOR_kP = 0.4;
+    public static final double ELEVATOR_kI = 0.0;
+    public static final double ELEVATOR_kD = 0.0;
+
+    // MAXMotion parameters
+    public static final double ELEVATOR_MAX_VELOCITY = 1000.0; // Encoder units per second
+    public static final double ELEVATOR_MAX_ACCELERATION = 1000.0; // Encoder units per second squared
+    public static final double ELEVATOR_ALLOWED_ERROR = 1.0; // Tolerance in encoder units
+  }
 }
