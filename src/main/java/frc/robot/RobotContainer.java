@@ -4,11 +4,12 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.*;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-
 import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -19,8 +20,12 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
+import frc.robot.Constants.CorAlConstants;
+import frc.robot.Constants.ElevatorConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.CorAl;
+import frc.robot.subsystems.CorAl.IntakeMode;
 import frc.robot.subsystems.Elevator;
 
 public class RobotContainer {
@@ -43,6 +48,8 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     private final Elevator elevator = new Elevator();
+    private final CorAl CorAl = new CorAl();
+
     /* Path follower */
     private final SendableChooser<Command> autoChooser;
 
@@ -89,17 +96,40 @@ public class RobotContainer {
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
-        operator_controller.y().onTrue(Commands.runOnce(() -> elevator.setPosition(20), elevator));
-        operator_controller.a().onTrue(Commands.runOnce(() -> elevator.setPosition(4), elevator));
-        operator_controller.x().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
-        
+        // Set Target Positions: Use buttons to move the elevator to predefined positions
+        operator_controller.povUp().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_MAX_POSITION), elevator));
+        operator_controller.povDown().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_MIN_POSITION), elevator));
+
+        // Reset Encoders: Use a button to reset the elevator encoders
+        operator_controller.leftTrigger().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
+
         // Bind joystick movement to manual control of the elevator
         elevator.setDefaultCommand(Commands.run(() -> {
-            // Use the joystick's Y-axis value to control the elevator's speed
+            // Use the left joystick's Y-axis value to control the elevator's speed
             double speed = -operator_controller.getLeftY(); // Negative to correct axis inversion
+            speed = Math.abs(speed) > ElevatorConstants.MANUAL_CONTROL_DEADBAND ? speed : 0; // Apply deadband
             elevator.manualControl(speed);
         }, elevator));
 
+        // Set Pivot Angle: Use buttons to move the pivot to predefined angles
+        operator_controller.y().onTrue(Commands.runOnce(() -> CorAl.setPivotAngle(CorAlConstants.PIVOT_MAX_ANGLE), CorAl));
+        operator_controller.a().onTrue(Commands.runOnce(() -> CorAl.setPivotAngle(CorAlConstants.PIVOT_MIN_ANGLE), CorAl));
+
+        // Reset Pivot Encoders: Use a button to reset the pivot encoders
+        operator_controller.rightTrigger().onTrue(Commands.runOnce(() -> CorAl.resetPivotEncoder(), CorAl).ignoringDisable(true));
+
+        // Set Intake Mode: Use buttons to control the intake
+        operator_controller.rightBumper().onTrue(Commands.runOnce(() -> CorAl.setIntakeMode(IntakeMode.CORAL), CorAl));
+        operator_controller.leftBumper().onTrue(Commands.runOnce(() -> CorAl.setIntakeMode(IntakeMode.ALGAE), CorAl));
+        operator_controller.b().onTrue(Commands.runOnce(() -> CorAl.stopIntake(), CorAl));
+
+        // Bind joystick movement to manual control of the pivot
+        CorAl.setDefaultCommand(Commands.run(() -> {
+            // Use the right joystick's Y-axis value to control the pivot's speed
+            double speed = -operator_controller.getRightY(); // Negative to correct axis inversion
+            speed = Math.abs(speed) > CorAlConstants.MANUAL_CONTROL_DEADBAND ? speed : 0; // Apply deadband
+            CorAl.manualPivotControl(speed);
+        }, CorAl));
     }
 
     public Command getAutonomousCommand() {

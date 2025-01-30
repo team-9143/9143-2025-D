@@ -1,8 +1,9 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.subsystems;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.littletonrobotics.junction.Logger;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.ControlType;
@@ -15,34 +16,32 @@ import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Subsystem;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ElevatorConstants;
 
-public class Elevator extends TimedRobot implements Subsystem {
+public class Elevator extends SubsystemBase {
+    private final SparkMax leftMotor;
+    private final SparkMax rightMotor;
+    private final RelativeEncoder leftEncoder;
+    private final RelativeEncoder rightEncoder;
+    private final SparkClosedLoopController leftController;
+    private final SparkClosedLoopController rightController;
 
-    private SparkMax leftMotor;
-    private SparkMax rightMotor;
-    private RelativeEncoder leftEncoder;
-    private RelativeEncoder rightEncoder;
-    private SparkClosedLoopController leftController;
-    private SparkClosedLoopController rightController;
-    private SparkMaxConfig leftConfig;
-    private SparkMaxConfig rightConfig;
+    // Thread safety
+    private final Lock motorLock = new ReentrantLock();
 
     public Elevator() {
-
         // Initialize the motors
         leftMotor = new SparkMax(ElevatorConstants.LEFT_ELEVATOR_ID, MotorType.kBrushless);
         rightMotor = new SparkMax(ElevatorConstants.RIGHT_ELEVATOR_ID, MotorType.kBrushless);
 
-        // Configure the motors
-        leftConfig = new SparkMaxConfig();
-        rightConfig = new SparkMaxConfig();
+        // Validate configuration
+        validateConfiguration();
 
-        configureMotor(leftMotor, leftConfig, true);  // Inverted motor
-        configureMotor(rightMotor, rightConfig, false); // Non-inverted motor
+        // Configure the motors
+        configureMotor(leftMotor, true);  // Inverted motor
+        configureMotor(rightMotor, false); // Non-inverted motor
 
         // Get encoders and controllers
         leftEncoder = leftMotor.getEncoder();
@@ -51,18 +50,32 @@ public class Elevator extends TimedRobot implements Subsystem {
         rightController = rightMotor.getClosedLoopController();
 
         // Set up SmartDashboard controls
-        SmartDashboard.setDefaultNumber("Target Position", 0);
-        SmartDashboard.setDefaultBoolean("Manual Control", true);
-        SmartDashboard.setDefaultNumber("Manual Speed", 0);
-        SmartDashboard.setDefaultBoolean("Reset Encoder", false);
+        setupSmartDashboard();
+
+        // Log initialization
+        Logger.recordOutput("Elevator/Initialized", true);
     }
 
-    private void configureMotor(SparkMax motor, SparkMaxConfig config, boolean isInverted) {
+    @SuppressWarnings("unused")
+    private void validateConfiguration() {
+        if (ElevatorConstants.LEFT_ELEVATOR_ID < 0 || ElevatorConstants.RIGHT_ELEVATOR_ID < 0) {
+            throw new IllegalArgumentException("Motor IDs must be non-negative.");
+        }
+        if (ElevatorConstants.ELEVATOR_kP < 0 || ElevatorConstants.ELEVATOR_kI < 0 || ElevatorConstants.ELEVATOR_kD < 0 || ElevatorConstants.ELEVATOR_kF < 0) {
+            throw new IllegalArgumentException("PID constants must be non-negative.");
+        }
+        if (ElevatorConstants.ELEVATOR_MIN_POSITION >= ElevatorConstants.ELEVATOR_MAX_POSITION) {
+            throw new IllegalArgumentException("Elevator min position must be less than max position.");
+        }
+    }
+
+    private void configureMotor(SparkMax motor, boolean isInverted) {
+        SparkMaxConfig config = new SparkMaxConfig();
 
         // Configure inversion and brake mode
         config.inverted(isInverted)
               .idleMode(IdleMode.kBrake)
-              .smartCurrentLimit(60); // Set current limit to 60 amps
+              .smartCurrentLimit(ElevatorConstants.ELEVATOR_CURRENT_LIMIT); // Set current limit from constants
 
         // Configure the encoder
         config.encoder.positionConversionFactor(1)
@@ -73,6 +86,7 @@ public class Elevator extends TimedRobot implements Subsystem {
               .p(ElevatorConstants.ELEVATOR_kP) // Position PID
               .i(ElevatorConstants.ELEVATOR_kI)
               .d(ElevatorConstants.ELEVATOR_kD)
+              .velocityFF(ElevatorConstants.ELEVATOR_kF) // Feedforward
               .outputRange(-1, 1)
               .maxMotion.maxVelocity(ElevatorConstants.ELEVATOR_MAX_VELOCITY)
               .maxAcceleration(ElevatorConstants.ELEVATOR_MAX_ACCELERATION)
@@ -80,57 +94,123 @@ public class Elevator extends TimedRobot implements Subsystem {
 
         // Apply configuration
         motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
+
+        // Log motor configuration
+        Logger.recordOutput("Elevator/MotorConfigured/" + (isInverted ? "Left" : "Right"), true);
+    }
+
+    private void setupSmartDashboard() {
+        SmartDashboard.setDefaultNumber("Target Position", 0);
+        SmartDashboard.setDefaultBoolean("Reset Encoder", false);
     }
 
     @Override
-    public void teleopPeriodic() {
+    public void periodic() {
+        // Update SmartDashboard with diagnostic information
+        SmartDashboard.putNumber("Left Encoder Position", leftEncoder.getPosition());
+        SmartDashboard.putNumber("Right Encoder Position", rightEncoder.getPosition());
+        SmartDashboard.putNumber("Left Motor Current", leftMotor.getOutputCurrent());
+        SmartDashboard.putNumber("Right Motor Current", rightMotor.getOutputCurrent());
 
+        // Check for encoder reset request
         if (SmartDashboard.getBoolean("Reset Encoder", false)) {
-            leftEncoder.setPosition(0);
-            rightEncoder.setPosition(0);
+            resetEncoders();
             SmartDashboard.putBoolean("Reset Encoder", false);
         }
 
-        /*
-        boolean manualControl = SmartDashboard.getBoolean("Manual Control", true);
-
-        if (manualControl) {
-            // Manual control
-            double manualSpeed = SmartDashboard.getNumber("Manual Speed", 0);
-            leftMotor.set(manualSpeed);
-            rightMotor.set(manualSpeed);
-        } else {
-            // Position control
-            double targetPosition = SmartDashboard.getNumber("Target Position", 0);
-            leftController.setReference(targetPosition, ControlType.kPosition);
-            rightController.setReference(targetPosition, ControlType.kPosition);
+        // Safety check for elevator position limits
+        if (isElevatorOutOfBounds()) {
+            stopElevator();
+            Logger.recordOutput("Elevator/OutOfBounds", true);
         }
-        */
 
-        // Display encoder positions on the dashboard
-        SmartDashboard.putNumber("Left Encoder Position", leftEncoder.getPosition());
-        SmartDashboard.putNumber("Right Encoder Position", rightEncoder.getPosition());
+        // Log diagnostic data
+        Logger.recordOutput("Elevator/LeftEncoderPosition", leftEncoder.getPosition());
+        Logger.recordOutput("Elevator/RightEncoderPosition", rightEncoder.getPosition());
+        Logger.recordOutput("Elevator/LeftMotorCurrent", leftMotor.getOutputCurrent());
+        Logger.recordOutput("Elevator/RightMotorCurrent", rightMotor.getOutputCurrent());
     }
 
     public void setPosition(double targetPosition) {
-        leftController.setReference(targetPosition, ControlType.kPosition);
-        rightController.setReference(targetPosition, ControlType.kPosition);
+        // Clamp target position to valid range
+        targetPosition = Math.min(Math.max(targetPosition, 
+                                ElevatorConstants.ELEVATOR_MIN_POSITION),
+                                ElevatorConstants.ELEVATOR_MAX_POSITION);
+        
+        motorLock.lock();
+        try {
+            leftController.setReference(targetPosition, ControlType.kPosition);
+            rightController.setReference(targetPosition, ControlType.kPosition);
+            SmartDashboard.putNumber("Target Position", targetPosition);
+            Logger.recordOutput("Elevator/TargetPosition", targetPosition);
+        } finally {
+            motorLock.unlock();
+        }
     }
 
     public void resetEncoders() {
-        leftEncoder.setPosition(0);
-        rightEncoder.setPosition(0);
+        motorLock.lock();
+        try {
+            leftEncoder.setPosition(0);
+            rightEncoder.setPosition(0);
+            Logger.recordOutput("Elevator/EncodersReset", true);
+        } finally {
+            motorLock.unlock();
+        }
     }
 
     public void manualControl(double speed) {
-        leftMotor.set(speed);
-        rightMotor.set(speed);
+        // Apply deadband and limit speed
+        if (Math.abs(speed) < ElevatorConstants.MANUAL_CONTROL_DEADBAND) {
+            speed = 0;
+        }
+        speed = Math.min(Math.max(speed * ElevatorConstants.MANUAL_SPEED_LIMIT, -1), 1);
+
+        motorLock.lock();
+        try {
+            // Only allow movement if within bounds or moving towards safe range
+            if (!isElevatorOutOfBounds() || 
+                (getCurrentPosition() <= ElevatorConstants.ELEVATOR_MIN_POSITION && speed > 0) ||
+                (getCurrentPosition() >= ElevatorConstants.ELEVATOR_MAX_POSITION && speed < 0)) {
+                leftMotor.set(speed);
+                rightMotor.set(speed);
+            } else {
+                stopElevator();
+            }
+            Logger.recordOutput("Elevator/ManualControlSpeed", speed);
+        } finally {
+            motorLock.unlock();
+        }
     }
 
-    @Override
-    public void robotPeriodic() {
-        // Update encoder values for monitoring
-        SmartDashboard.putNumber("Left Encoder Position", leftEncoder.getPosition());
-        SmartDashboard.putNumber("Right Encoder Position", rightEncoder.getPosition());
+    public void stopElevator() {
+        motorLock.lock();
+        try {
+            leftMotor.set(0);
+            rightMotor.set(0);
+            Logger.recordOutput("Elevator/Stopped", true);
+        } finally {
+            motorLock.unlock();
+        }
+    }
+
+    private boolean isElevatorOutOfBounds() {
+        double currentPosition = getCurrentPosition();
+        return currentPosition < ElevatorConstants.ELEVATOR_MIN_POSITION || 
+               currentPosition > ElevatorConstants.ELEVATOR_MAX_POSITION;
+    }
+
+    public double getCurrentPosition() {
+        motorLock.lock();
+        try {
+            return (leftEncoder.getPosition() + rightEncoder.getPosition()) / 2.0;
+        } finally {
+            motorLock.unlock();
+        }
+    }
+
+    public boolean isAtTargetPosition() {
+        return Math.abs(SmartDashboard.getNumber("Target Position", 0) - getCurrentPosition()) <= 
+               ElevatorConstants.ELEVATOR_ALLOWED_ERROR;
     }
 }
