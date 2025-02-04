@@ -13,7 +13,8 @@ import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -43,12 +44,16 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     private final Elevator elevator = new Elevator();
-    /* Path follower */
+
     private final SendableChooser<Command> autoChooser;
+    private final ShuffleboardTab autoTab = Shuffleboard.getTab("Auto");
 
     public RobotContainer() {
+        // Create auto chooser and put it on the Auto tab in Shuffleboard
         autoChooser = AutoBuilder.buildAutoChooser("Example Auto");
-        SmartDashboard.putData("Auto Mode", autoChooser);
+        autoTab.add("Auto Mode", autoChooser)
+            .withSize(2, 1)
+            .withPosition(0, 0);
 
         configureBindings();
     }
