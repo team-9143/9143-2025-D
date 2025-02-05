@@ -33,12 +33,12 @@ public final class Constants {
 
   public final class ElevatorConstants {
     // Motor IDs
-    public static final int LEFT_ELEVATOR_ID = 58; // Example CAN ID for the left elevator motor
-    public static final int RIGHT_ELEVATOR_ID = 59; // Example CAN ID for the right elevator motor
+    public static final int ELEVATOR_LEFT_ID = 58; // Example CAN ID for the left elevator motor
+    public static final int ELEVATOR_RIGHT_ID = 59; // Example CAN ID for the right elevator motor
 
     // Motor Inversion
-    public static final boolean LEFT_MOTOR_INVERTED = false; // Set to true if the left motor is inverted
-    public static final boolean RIGHT_MOTOR_INVERTED = false; // Set to true if the right motor is inverted
+    public static final boolean ELEVATOR_LEFT_INVERTED = false; // Set to true if the left motor is inverted
+    public static final boolean ELEVATOR_RIGHT_INVERTED = false; // Set to true if the right motor is inverted
 
     // Current Limits
     public static final int ELEVATOR_CURRENT_LIMIT = 60; // Current limit for the elevator motors (in amps)
@@ -60,52 +60,52 @@ public final class Constants {
     public static final double ELEVATOR_ALLOWED_ERROR = 1.0; // Allowed error threshold for the elevator to be "at target"
 
     // Manual Control Parameters
-    public static final double MANUAL_CONTROL_DEADBAND = 0.2; // Deadband for manual elevator control
-    public static final double MANUAL_SPEED_LIMIT = 0.5; // Speed limit for manual elevator control
+    public static final double ELEVATOR_MANUAL_CONTROL_DEADBAND = 0.2; // Deadband for manual elevator control
+    public static final double ELEVATOR_MANUAL_SPEED_LIMIT = 0.5; // Speed limit for manual elevator control
 
     // Preset Heights
-    public static final double BASE_HEIGHT = 0.0;
-    public static final double CORAL_L1_HEIGHT = 20.0;
-    public static final double CORAL_L2_HEIGHT = 40.0;
-    public static final double CORAL_L3_HEIGHT = 60.0;
-    public static final double CORAL_L4_HEIGHT = 80.0;
+    public static final double ELEVATOR_BASE_HEIGHT = 0.0;
+    public static final double ELEVATOR_CORAL_L1_HEIGHT = 20.0;
+    public static final double ELEVATOR_CORAL_L2_HEIGHT = 40.0;
+    public static final double ELEVATOR_CORAL_L3_HEIGHT = 60.0;
+    public static final double ELEVATOR_CORAL_L4_HEIGHT = 80.0;
   }
 
   public final class AlLowConstants {
     // Motor IDs
-    public static final int PIVOT_MOTOR_ID = 62; // CAN ID for the pivot motor
-    public static final int ROLLER_MOTOR_ID = 63; // CAN ID for the roller motor
+    public static final int ALLOW_PIVOT_MOTOR_ID = 62; // CAN ID for the pivot motor
+    public static final int ALLOW_ROLLER_MOTOR_ID = 63; // CAN ID for the roller motor
 
     // Motor Inversion
-    public static final boolean PIVOT_MOTOR_INVERTED = false; // Set to true if the pivot motor is inverted
-    public static final boolean ROLLER_MOTOR_INVERTED = false; // Set to true if the roller motor is inverted
+    public static final boolean ALLOW_PIVOT_MOTOR_INVERTED = false; // Set to true if the pivot motor is inverted
+    public static final boolean ALLOW_ROLLER_MOTOR_INVERTED = false; // Set to true if the roller motor is inverted
 
     // Current Limits
-    public static final int PIVOT_CURRENT_LIMIT = 30; // Current limit for the pivot motor (in amps)
-    public static final int ROLLER_CURRENT_LIMIT = 20; // Current limit for the roller motor (in amps)
+    public static final int ALLOW_PIVOT_CURRENT_LIMIT = 30; // Current limit for the pivot motor (in amps)
+    public static final int ALLOW_ROLLER_CURRENT_LIMIT = 20; // Current limit for the roller motor (in amps)
 
     // Encoder Conversion Factors
-    public static final double PIVOT_POSITION_CONVERSION = 1.0; // Convert encoder ticks to degrees
-    public static final double PIVOT_VELOCITY_CONVERSION = 1.0; // Convert encoder ticks to degrees per second
+    public static final double ALLOW_PIVOT_POSITION_CONVERSION = 1.0; // Convert encoder ticks to degrees
+    public static final double ALLOW_PIVOT_VELOCITY_CONVERSION = 1.0; // Convert encoder ticks to degrees per second
 
     // PID Constants for Pivot Motor
-    public static final double PIVOT_kP = 0.1; // Proportional gain for the pivot motor's PID controller
-    public static final double PIVOT_kI = 0.0; // Integral gain for the pivot motor's PID controller
-    public static final double PIVOT_kD = 0.0; // Derivative gain for the pivot motor's PID controller
+    public static final double ALLOW_PIVOT_kP = 0.1; // Proportional gain for the pivot motor's PID controller
+    public static final double ALLOW_PIVOT_kI = 0.0; // Integral gain for the pivot motor's PID controller
+    public static final double ALLOW_PIVOT_kD = 0.0; // Derivative gain for the pivot motor's PID controller
 
     // Pivot Angle Limits
-    public static final double PIVOT_MIN_ANGLE = 0.0; // Minimum allowed angle for the pivot (in degrees)
-    public static final double PIVOT_MAX_ANGLE = 90.0; // Maximum allowed angle for the pivot (in degrees)
+    public static final double ALLOW_PIVOT_MIN_ANGLE = 0.0; // Minimum allowed angle for the pivot (in degrees)
+    public static final double ALLOW_PIVOT_MAX_ANGLE = 90.0; // Maximum allowed angle for the pivot (in degrees)
 
     // Allowed Error
-    public static final double PIVOT_ALLOWED_ERROR = 1.0; // Allowed error threshold for the pivot to be "at target"
+    public static final double ALLOW_PIVOT_ALLOWED_ERROR = 1.0; // Allowed error threshold for the pivot to be "at target"
 
     // Manual Control Parameters
-    public static final double MANUAL_CONTROL_DEADBAND = 0.2; // Deadband for manual pivot control
-    public static final double MANUAL_SPEED_LIMIT = 0.5; // Speed limit for manual pivot control
+    public static final double ALLOW_MANUAL_CONTROL_DEADBAND = 0.2; // Deadband for manual pivot control
+    public static final double ALLOW_MANUAL_SPEED_LIMIT = 0.5; // Speed limit for manual pivot control
 
     // Pivot Preset Angles
-    public static final double BASE_ANGLE = 0.0;
-    public static final double INTAKE_ANGLE = 45.0;
+    public static final double ALLOW_BASE_ANGLE = 0.0;
+    public static final double ALLOW_INTAKE_ANGLE = 45.0;
   }
 }

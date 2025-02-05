@@ -35,15 +35,15 @@ public class Elevator extends SubsystemBase {
 
     public Elevator() {
         // Initialize motors
-        leftMotor = new SparkMax(ElevatorConstants.LEFT_ELEVATOR_ID, MotorType.kBrushless);
-        rightMotor = new SparkMax(ElevatorConstants.RIGHT_ELEVATOR_ID, MotorType.kBrushless);
+        leftMotor = new SparkMax(ElevatorConstants.ELEVATOR_LEFT_ID, MotorType.kBrushless);
+        rightMotor = new SparkMax(ElevatorConstants.ELEVATOR_RIGHT_ID, MotorType.kBrushless);
 
         // Configure motors
         leftConfig = new SparkMaxConfig();
         rightConfig = new SparkMaxConfig();
 
-        configureMotor(leftMotor, leftConfig, ElevatorConstants.LEFT_MOTOR_INVERTED);
-        configureMotor(rightMotor, rightConfig, ElevatorConstants.RIGHT_MOTOR_INVERTED);
+        configureMotor(leftMotor, leftConfig, ElevatorConstants.ELEVATOR_LEFT_INVERTED);
+        configureMotor(rightMotor, rightConfig, ElevatorConstants.ELEVATOR_RIGHT_INVERTED);
 
         // Get encoders and controllers
         leftEncoder = leftMotor.getEncoder();
@@ -145,10 +145,10 @@ public class Elevator extends SubsystemBase {
 
     public void manualControl(double speed) {
         // Apply deadband and limits
-        if (Math.abs(speed) < ElevatorConstants.MANUAL_CONTROL_DEADBAND) {
+        if (Math.abs(speed) < ElevatorConstants.ELEVATOR_MANUAL_CONTROL_DEADBAND) {
             speed = 0;
         }
-        speed = Math.min(Math.max(speed * ElevatorConstants.MANUAL_SPEED_LIMIT, -1), 1);
+        speed = Math.min(Math.max(speed * ElevatorConstants.ELEVATOR_MANUAL_SPEED_LIMIT, -1), 1);
 
         // Safety checks
         if (!isElevatorOutOfBounds() || 

@@ -32,15 +32,15 @@ public class AlLow extends SubsystemBase {
 
     public AlLow() {
         // Initialize motors
-        pivotMotor = new SparkMax(AlLowConstants.PIVOT_MOTOR_ID, MotorType.kBrushless);
-        rollerMotor = new SparkMax(AlLowConstants.ROLLER_MOTOR_ID, MotorType.kBrushless);
+        pivotMotor = new SparkMax(AlLowConstants.ALLOW_PIVOT_MOTOR_ID, MotorType.kBrushless);
+        rollerMotor = new SparkMax(AlLowConstants.ALLOW_ROLLER_MOTOR_ID, MotorType.kBrushless);
 
         // Configure motors
         pivotConfig = new SparkMaxConfig();
         rollerConfig = new SparkMaxConfig();
         
-        configureMotor(pivotMotor, pivotConfig, AlLowConstants.PIVOT_MOTOR_INVERTED, true);
-        configureMotor(rollerMotor, rollerConfig, AlLowConstants.ROLLER_MOTOR_INVERTED, false);
+        configureMotor(pivotMotor, pivotConfig, AlLowConstants.ALLOW_PIVOT_MOTOR_INVERTED, true);
+        configureMotor(rollerMotor, rollerConfig, AlLowConstants.ALLOW_ROLLER_MOTOR_INVERTED, false);
 
         // Get encoder and controller
         pivotEncoder = pivotMotor.getEncoder();
@@ -68,18 +68,18 @@ public class AlLow extends SubsystemBase {
     private void configureMotor(SparkMax motor, SparkMaxConfig config, boolean isInverted, boolean isPivot) {
         config.inverted(isInverted)
               .idleMode(IdleMode.kBrake)
-              .smartCurrentLimit(isPivot ? AlLowConstants.PIVOT_CURRENT_LIMIT : AlLowConstants.ROLLER_CURRENT_LIMIT);
+              .smartCurrentLimit(isPivot ? AlLowConstants.ALLOW_PIVOT_CURRENT_LIMIT : AlLowConstants.ALLOW_ROLLER_CURRENT_LIMIT);
 
         if (isPivot) {
             // Configure encoder conversion factors
-            config.encoder.positionConversionFactor(AlLowConstants.PIVOT_POSITION_CONVERSION)
-                              .velocityConversionFactor(AlLowConstants.PIVOT_VELOCITY_CONVERSION);
+            config.encoder.positionConversionFactor(AlLowConstants.ALLOW_PIVOT_POSITION_CONVERSION)
+                              .velocityConversionFactor(AlLowConstants.ALLOW_PIVOT_VELOCITY_CONVERSION);
 
             // Configure closed-loop control
             config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                  .p(AlLowConstants.PIVOT_kP)
-                  .i(AlLowConstants.PIVOT_kI)
-                  .d(AlLowConstants.PIVOT_kD)
+                  .p(AlLowConstants.ALLOW_PIVOT_kP)
+                  .i(AlLowConstants.ALLOW_PIVOT_kI)
+                  .d(AlLowConstants.ALLOW_PIVOT_kD)
                   .outputRange(-1, 1);
         }
 
@@ -133,8 +133,8 @@ public class AlLow extends SubsystemBase {
 
     public void setPivotAngle(double targetAngle) {
         // Clamp target angle
-        targetAngle = Math.min(Math.max(targetAngle, AlLowConstants.PIVOT_MIN_ANGLE),
-                               AlLowConstants.PIVOT_MAX_ANGLE);
+        targetAngle = Math.min(Math.max(targetAngle, AlLowConstants.ALLOW_PIVOT_MIN_ANGLE),
+                               AlLowConstants.ALLOW_PIVOT_MAX_ANGLE);
         
         pivotController.setReference(targetAngle, ControlType.kPosition);
         pivotTargetAngleWidget.getEntry().setDouble(targetAngle);
@@ -154,15 +154,15 @@ public class AlLow extends SubsystemBase {
 
     public void manualPivotControl(double speed) {
         // Apply deadband and limits
-        if (Math.abs(speed) < AlLowConstants.MANUAL_CONTROL_DEADBAND) {
+        if (Math.abs(speed) < AlLowConstants.ALLOW_MANUAL_CONTROL_DEADBAND) {
             speed = 0;
         }
-        speed = Math.min(Math.max(speed * AlLowConstants.MANUAL_SPEED_LIMIT, -1), 1);
+        speed = Math.min(Math.max(speed * AlLowConstants.ALLOW_MANUAL_SPEED_LIMIT, -1), 1);
 
         // Safety checks
         if (!isPivotOutOfBounds() || 
-            (getPivotAngle() <= AlLowConstants.PIVOT_MIN_ANGLE && speed > 0) ||
-            (getPivotAngle() >= AlLowConstants.PIVOT_MAX_ANGLE && speed < 0)) {
+            (getPivotAngle() <= AlLowConstants.ALLOW_PIVOT_MIN_ANGLE && speed > 0) ||
+            (getPivotAngle() >= AlLowConstants.ALLOW_PIVOT_MAX_ANGLE && speed < 0)) {
             pivotMotor.set(speed);
         } else {
             stopPivot();
@@ -175,8 +175,8 @@ public class AlLow extends SubsystemBase {
 
     private boolean isPivotOutOfBounds() {
         double currentAngle = getPivotAngle();
-        return currentAngle < AlLowConstants.PIVOT_MIN_ANGLE || 
-               currentAngle > AlLowConstants.PIVOT_MAX_ANGLE;
+        return currentAngle < AlLowConstants.ALLOW_PIVOT_MIN_ANGLE || 
+               currentAngle > AlLowConstants.ALLOW_PIVOT_MAX_ANGLE;
     }
 
     public double getPivotAngle() {
@@ -186,6 +186,6 @@ public class AlLow extends SubsystemBase {
     public boolean isAtTargetAngle() {
         double targetAngle = pivotTargetAngleWidget.getEntry().getDouble(0);
         double currentAngle = getPivotAngle();
-        return Math.abs(targetAngle - currentAngle) <= AlLowConstants.PIVOT_ALLOWED_ERROR;
+        return Math.abs(targetAngle - currentAngle) <= AlLowConstants.ALLOW_PIVOT_ALLOWED_ERROR;
     }
 }

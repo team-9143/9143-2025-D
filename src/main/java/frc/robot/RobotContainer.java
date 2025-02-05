@@ -93,13 +93,13 @@ public class RobotContainer {
         drivetrain.registerTelemetry(logger::telemeterize);
 
         // Elevator preset heights
-        operator_controller.povDown().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.CORAL_L1_HEIGHT), elevator));
-        operator_controller.povLeft().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.CORAL_L2_HEIGHT), elevator));
-        operator_controller.povRight().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.CORAL_L3_HEIGHT), elevator));
-        operator_controller.povUp().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.CORAL_L4_HEIGHT), elevator));
+        operator_controller.povDown().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L1_HEIGHT), elevator));
+        operator_controller.povLeft().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L2_HEIGHT), elevator));
+        operator_controller.povRight().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L3_HEIGHT), elevator));
+        operator_controller.povUp().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L4_HEIGHT), elevator));
 
         // Elevator retraction to base height
-        operator_controller.x().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.BASE_HEIGHT), elevator));
+        operator_controller.x().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_BASE_HEIGHT), elevator));
 
         // Elevator encoder reset
         operator_controller.a().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
@@ -112,13 +112,13 @@ public class RobotContainer {
 
         // AlLow extension (with rollers activated)
         operator_controller.rightBumper().whileTrue(Commands.run(() -> {
-            elevator.setPosition(AlLowConstants.INTAKE_ANGLE); // Extend to intaking angle
+            elevator.setPosition(AlLowConstants.ALLOW_INTAKE_ANGLE); // Extend to intaking angle
             allow.setRollerSpeed(-1.0); // Spin rollers inward
         }, elevator, allow));
 
         // AlLow retraction (with rollers stopped)
         operator_controller.leftBumper().onTrue(Commands.runOnce(() -> {
-            elevator.setPosition(AlLowConstants.BASE_ANGLE); // Retract to base angle
+            elevator.setPosition(AlLowConstants.ALLOW_BASE_ANGLE); // Retract to base angle
             allow.stopRoller(); // Stop rollers
         }, elevator, allow));
 
