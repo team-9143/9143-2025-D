@@ -110,6 +110,7 @@ public class RobotContainer {
             elevator.manualControl(speed);
         }, elevator));
 
+        /*
         // CorAl retraction
         operator_controller.a().onTrue(Commands.runOnce(() -> {
             coral.setPivotAngle(CorAlConstants.BASE_ANGLE);
@@ -160,6 +161,7 @@ public class RobotContainer {
             double speed = -operator_controller.getRightX(); // Use right stick X for manual control
             coral.manualPivotControl(speed);
         }, coral));
+        */
     }
 
     public Command getAutonomousCommand() {
