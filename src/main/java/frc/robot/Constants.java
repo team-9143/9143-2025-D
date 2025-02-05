@@ -67,39 +67,47 @@ public final class Constants {
 
   public final class CorAlConstants {
     // Motor IDs
-    public static final int PIVOT_MOTOR_ID = 60; // Replace with actual CAN ID
-    public static final int INTAKE_MOTOR_ID = 61; // Replace with actual CAN ID
+    public static final int PIVOT_MOTOR_ID = 60; // CAN ID for the pivot motor
+    public static final int INTAKE_MOTOR_ID = 61; // CAN ID for the intake motor
 
     // Motor Inversion
-    public static final boolean PIVOT_MOTOR_INVERTED = false; // Invert if necessary
-    public static final boolean INTAKE_MOTOR_INVERTED = false; // Invert if necessary
+    public static final boolean PIVOT_MOTOR_INVERTED = false; // Set to true if the pivot motor is inverted
+    public static final boolean INTAKE_MOTOR_INVERTED = false; // Set to true if the intake motor is inverted
 
     // Current Limits
-    public static final int PIVOT_CURRENT_LIMIT = 40; // Set current limit in amps
-    public static final int INTAKE_CURRENT_LIMIT = 30; // Set current limit in amps
+    public static final int PIVOT_CURRENT_LIMIT = 30; // Current limit for the pivot motor (in amps)
+    public static final int INTAKE_CURRENT_LIMIT = 20; // Current limit for the intake motor (in amps)
 
-    // PID Constants for Pivot
-    public static final double PIVOT_kP = 0.1; // Proportional gain
-    public static final double PIVOT_kI = 0.0; // Integral gain
-    public static final double PIVOT_kD = 0.0; // Derivative gain
-    public static final double PIVOT_kF = 0.0; // Feedforward gain
+    // Encoder Conversion Factors
+    public static final double PIVOT_POSITION_CONVERSION = 1.0; // Convert encoder ticks to degrees
+    public static final double PIVOT_VELOCITY_CONVERSION = 1.0; // Convert encoder ticks to degrees per second
 
-    // Motion Profiling Constants for Pivot
-    public static final double PIVOT_MAX_VELOCITY = 1000; // Max velocity in units per second
-    public static final double PIVOT_MAX_ACCELERATION = 500; // Max acceleration in units per second squared
-    public static final double PIVOT_ALLOWED_ERROR = 0.5; // Allowed closed-loop error in units
-    public static final double PIVOT_MIN_VELOCITY = 0; // Minimum velocity for Smart Motion
+    // PID Constants
+    public static final double PIVOT_kP = 0.1; // Proportional gain for the pivot motor's PID controller
+    public static final double PIVOT_kI = 0.0; // Integral gain for the pivot motor's PID controller
+    public static final double PIVOT_kD = 0.0; // Derivative gain for the pivot motor's PID controller
 
-    // Pivot Position Limits
-    public static final double PIVOT_MIN_ANGLE = 0; // Minimum allowed angle (e.g., fully retracted)
-    public static final double PIVOT_MAX_ANGLE = 90; // Maximum allowed angle (e.g., fully extended)
+    // Pivot Angle Limits
+    public static final double PIVOT_MIN_ANGLE = 0.0; // Minimum allowed angle for the pivot (in degrees)
+    public static final double PIVOT_MAX_ANGLE = 90.0; // Maximum allowed angle for the pivot (in degrees)
 
-    // Intake Constants
-    public static final double INTAKE_SPEED = 0.8; // Speed for intaking/outtaking
-    public static final double INTAKE_ALGAE_SPEED = -0.8; // Speed for intaking algae (opposite direction)
+    // Allowed Error
+    public static final double PIVOT_ALLOWED_ERROR = 1.0; // Allowed error threshold for the pivot to be "at target"
 
-    // Manual Control Constants
-    public static final double MANUAL_CONTROL_DEADBAND = 0.1; // Deadband for manual control input
-    public static final double MANUAL_SPEED_LIMIT = 0.5; // Speed limit for manual control (0 to 1)
+    // Manual Control Parameters
+    public static final double MANUAL_CONTROL_DEADBAND = 0.1; // Deadband for manual pivot control
+    public static final double MANUAL_SPEED_LIMIT = 0.5; // Speed limit for manual pivot control
+
+    // Pivot Preset Angles
+    public static final double BASE_ANGLE = 0.0;
+    public static final double CORAL_LOW_ANGLE = 5.0;
+    public static final double CORAL_MID_ANGLE = 10.0;
+    public static final double CORAL_HIGH_ANGLE = 15.0;
+    public static final double ALGAE_INTAKE_ANGLE = 20.0;
+    public static final double ALGAE_SCORE_ANGLE = 25.0;
+
+    // Roller Speeds
+    public static final double CORAL_INTAKE_SPEED = 0.5;
+    public static final double ALGAE_INTAKE_SPEED = -0.5;
   }
 }

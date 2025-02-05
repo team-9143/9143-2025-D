@@ -20,13 +20,12 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
-import frc.robot.Constants.CorAlConstants;
-import frc.robot.Constants.ElevatorConstants;
 import frc.robot.generated.TunerConstants;
+import frc.robot.Constants.ElevatorConstants;
+import frc.robot.Constants.CorAlConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.CorAl;
-import frc.robot.subsystems.CorAl.IntakeMode;
 import frc.robot.subsystems.Elevator;
+import frc.robot.subsystems.CorAl;
 
 public class RobotContainer {
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -48,7 +47,7 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     private final Elevator elevator = new Elevator();
-    private final CorAl CorAl = new CorAl();
+    private final CorAl coral = new CorAl();
 
     /* Path follower */
     private final SendableChooser<Command> autoChooser;
@@ -91,7 +90,7 @@ public class RobotContainer {
         driver_controller.start().and(driver_controller.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         driver_controller.start().and(driver_controller.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        // reset the field-centric heading on left bumper press
+        // Reset the field-centric heading on left bumper press
         driver_controller.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
 
         drivetrain.registerTelemetry(logger::telemeterize);
@@ -111,29 +110,67 @@ public class RobotContainer {
             elevator.manualControl(speed);
         }, elevator));
 
-        // Set Pivot Angle: Use buttons to move the pivot to predefined angles
-        operator_controller.y().onTrue(Commands.runOnce(() -> CorAl.setPivotAngle(CorAlConstants.PIVOT_MAX_ANGLE), CorAl));
-        operator_controller.a().onTrue(Commands.runOnce(() -> CorAl.setPivotAngle(CorAlConstants.PIVOT_MIN_ANGLE), CorAl));
+        // CorAl retraction
+        operator_controller.a().onTrue(Commands.runOnce(() -> {
+            coral.setPivotAngle(CorAlConstants.BASE_ANGLE);
+            coral.setIntakeSpeed(0);
+        }, coral));
 
-        // Reset Pivot Encoders: Use a button to reset the pivot encoders
-        operator_controller.rightTrigger().onTrue(Commands.runOnce(() -> CorAl.resetPivotEncoder(), CorAl).ignoringDisable(true));
+        // Coral intaking
+        operator_controller.b().onTrue(Commands.runOnce(() -> {
+            coral.setPivotAngle(CorAlConstants.BASE_ANGLE);
+            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
+        }, coral));
 
-        // Set Intake Mode: Use buttons to control the intake
-        operator_controller.rightBumper().onTrue(Commands.runOnce(() -> CorAl.setIntakeMode(IntakeMode.CORAL), CorAl));
-        operator_controller.leftBumper().onTrue(Commands.runOnce(() -> CorAl.setIntakeMode(IntakeMode.ALGAE), CorAl));
-        operator_controller.b().onTrue(Commands.runOnce(() -> CorAl.stopIntake(), CorAl));
+        // Coral low scoring
+        operator_controller.x().onTrue(Commands.runOnce(() -> {
+            coral.setPivotAngle(CorAlConstants.CORAL_LOW_ANGLE);
+            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
+        }, coral));
 
-        // Bind joystick movement to manual control of the pivot
-        CorAl.setDefaultCommand(Commands.run(() -> {
-            // Use the right joystick's Y-axis value to control the pivot's speed
-            double speed = -operator_controller.getRightY(); // Negative to correct axis inversion
-            speed = Math.abs(speed) > CorAlConstants.MANUAL_CONTROL_DEADBAND ? speed : 0; // Apply deadband
-            CorAl.manualPivotControl(speed);
-        }, CorAl));
+        // Coral mid scoring
+        operator_controller.y().onTrue(Commands.runOnce(() -> {
+            coral.setPivotAngle(CorAlConstants.CORAL_MID_ANGLE);
+            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
+        }, coral));
+
+        // Coral high scoring
+        operator_controller.start().onTrue(Commands.runOnce(() -> {
+            coral.setPivotAngle(CorAlConstants.CORAL_HIGH_ANGLE);
+            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
+        }, coral));
+
+        // Algae intaking
+        operator_controller.leftBumper().onTrue(Commands.runOnce(() -> {
+            coral.setPivotAngle(CorAlConstants.ALGAE_INTAKE_ANGLE);
+            coral.setIntakeSpeed(CorAlConstants.ALGAE_INTAKE_SPEED);
+        }, coral));
+
+        // Algae scoring
+        operator_controller.rightBumper().onTrue(Commands.runOnce(() -> {
+            coral.setPivotAngle(CorAlConstants.ALGAE_SCORE_ANGLE);
+            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
+        }, coral));
+
+        // Pivot encoder reset
+        operator_controller.back().onTrue(Commands.runOnce(() -> coral.resetPivotEncoder(), coral).ignoringDisable(true));
+
+        // Pivot manual control
+        coral.setDefaultCommand(Commands.run(() -> {
+            double speed = -operator_controller.getRightX(); // Use right stick X for manual control
+            coral.manualPivotControl(speed);
+        }, coral));
     }
 
     public Command getAutonomousCommand() {
         /* Run the path selected from the auto chooser */
         return autoChooser.getSelected();
+    }
+
+    public void disabledInit() {
+        // Stop all subsystems when disabled
+        elevator.stopElevator();
+        coral.stopPivot();
+        coral.setIntakeSpeed(0);
     }
 }

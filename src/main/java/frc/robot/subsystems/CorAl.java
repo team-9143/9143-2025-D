@@ -1,10 +1,5 @@
 package frc.robot.subsystems;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.littletonrobotics.junction.Logger;
-
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
@@ -16,7 +11,9 @@ import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.shuffleboard.SimpleWidget;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CorAlConstants;
 
@@ -25,19 +22,16 @@ public class CorAl extends SubsystemBase {
     private final SparkMax intakeMotor;
     private final RelativeEncoder pivotEncoder;
     private final SparkClosedLoopController pivotController;
-
-    // Thread safety
-    private final Lock motorLock = new ReentrantLock();
+    private final ShuffleboardTab tab;
+    private final SimpleWidget pivotTargetAngleWidget;
+    private final SimpleWidget resetPivotEncoderWidget;
 
     public CorAl() {
-        // Initialize the motors
+        // Initialize motors
         pivotMotor = new SparkMax(CorAlConstants.PIVOT_MOTOR_ID, MotorType.kBrushless);
         intakeMotor = new SparkMax(CorAlConstants.INTAKE_MOTOR_ID, MotorType.kBrushless);
 
-        // Validate configuration
-        validateConfiguration();
-
-        // Configure the motors
+        // Configure motors
         configureMotor(pivotMotor, CorAlConstants.PIVOT_MOTOR_INVERTED, true);  // Pivot motor
         configureMotor(intakeMotor, CorAlConstants.INTAKE_MOTOR_INVERTED, false); // Intake motor
 
@@ -45,24 +39,17 @@ public class CorAl extends SubsystemBase {
         pivotEncoder = pivotMotor.getEncoder();
         pivotController = pivotMotor.getClosedLoopController();
 
-        // Set up SmartDashboard controls
-        setupSmartDashboard();
+        // Initialize Shuffleboard tab and widgets
+        tab = Shuffleboard.getTab("CorAl");
+        pivotTargetAngleWidget = tab.add("Pivot Target Angle", 0)
+                                    .withPosition(0, 0)
+                                    .withSize(2, 1);
+        resetPivotEncoderWidget = tab.add("Reset Pivot Encoder", false)
+                                     .withPosition(2, 0)
+                                     .withSize(2, 1);
 
-        // Log initialization
-        Logger.recordOutput("CorAl/Initialized", true);
-    }
-
-    @SuppressWarnings("unused")
-    private void validateConfiguration() {
-        if (CorAlConstants.PIVOT_MOTOR_ID < 0 || CorAlConstants.INTAKE_MOTOR_ID < 0) {
-            throw new IllegalArgumentException("Motor IDs must be non-negative.");
-        }
-        if (CorAlConstants.PIVOT_kP < 0 || CorAlConstants.PIVOT_kI < 0 || CorAlConstants.PIVOT_kD < 0 || CorAlConstants.PIVOT_kF < 0) {
-            throw new IllegalArgumentException("PID constants must be non-negative.");
-        }
-        if (CorAlConstants.PIVOT_MIN_ANGLE >= CorAlConstants.PIVOT_MAX_ANGLE) {
-            throw new IllegalArgumentException("Pivot min angle must be less than max angle.");
-        }
+        // Configure Shuffleboard
+        configureShuffleboard();
     }
 
     private void configureMotor(SparkMax motor, boolean isInverted, boolean usePID) {
@@ -75,8 +62,8 @@ public class CorAl extends SubsystemBase {
 
         // Configure the encoder (only for pivot motor)
         if (usePID) {
-            config.encoder.positionConversionFactor(1)
-                  .velocityConversionFactor(1);
+            config.encoder.positionConversionFactor(CorAlConstants.PIVOT_POSITION_CONVERSION)
+                  .velocityConversionFactor(CorAlConstants.PIVOT_VELOCITY_CONVERSION);
         }
 
         // Configure closed loop controller (only for pivot motor)
@@ -85,132 +72,92 @@ public class CorAl extends SubsystemBase {
                   .p(CorAlConstants.PIVOT_kP) // Position PID
                   .i(CorAlConstants.PIVOT_kI)
                   .d(CorAlConstants.PIVOT_kD)
-                  .velocityFF(CorAlConstants.PIVOT_kF) // Feedforward
-                  .outputRange(-1, 1)
-                  .maxMotion.maxVelocity(CorAlConstants.PIVOT_MAX_VELOCITY)
-                  .maxAcceleration(CorAlConstants.PIVOT_MAX_ACCELERATION)
-                  .allowedClosedLoopError(CorAlConstants.PIVOT_ALLOWED_ERROR);
+                  .outputRange(-1, 1);
         }
 
         // Apply configuration
         motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
-
-        // Log motor configuration
-        Logger.recordOutput("CorAl/MotorConfigured/" + (usePID ? "Pivot" : "Intake"), true);
     }
 
-    private void setupSmartDashboard() {
-        SmartDashboard.setDefaultNumber("Pivot Target Angle", 0);
-        SmartDashboard.setDefaultBoolean("Reset Pivot Encoder", false);
+    private void configureShuffleboard() {
+        // Status indicators
+        tab.addNumber("Pivot Angle", this::getPivotAngle)
+           .withPosition(0, 1)
+           .withSize(2, 1);
+        
+        tab.addNumber("Pivot Current", pivotMotor::getOutputCurrent)
+           .withPosition(2, 1)
+           .withSize(2, 1);
+           
+        tab.addNumber("Intake Current", intakeMotor::getOutputCurrent)
+           .withPosition(4, 1)
+           .withSize(2, 1);
+
+        // Status booleans
+        tab.addBoolean("Pivot Out of Bounds", this::isPivotOutOfBounds)
+           .withPosition(0, 2)
+           .withSize(2, 1);
+           
+        tab.addBoolean("At Target Angle", this::isAtTargetAngle)
+           .withPosition(2, 2)
+           .withSize(2, 1);
     }
 
     @Override
     public void periodic() {
-        // Update SmartDashboard with diagnostic information
-        SmartDashboard.putNumber("Pivot Encoder Position", pivotEncoder.getPosition());
-        SmartDashboard.putNumber("Pivot Motor Current", pivotMotor.getOutputCurrent());
-        SmartDashboard.putNumber("Intake Motor Current", intakeMotor.getOutputCurrent());
-
-        // Check for encoder reset request
-        if (SmartDashboard.getBoolean("Reset Pivot Encoder", false)) {
+        // Check for encoder reset
+        if (resetPivotEncoderWidget.getEntry().getBoolean(false)) {
             resetPivotEncoder();
-            SmartDashboard.putBoolean("Reset Pivot Encoder", false);
+            resetPivotEncoderWidget.getEntry().setBoolean(false);
         }
 
-        // Safety check for pivot angle limits
+        // Safety check
         if (isPivotOutOfBounds()) {
             stopPivot();
-            Logger.recordOutput("CorAl/PivotOutOfBounds", true);
         }
-
-        // Log diagnostic data
-        Logger.recordOutput("CorAl/PivotEncoderPosition", pivotEncoder.getPosition());
-        Logger.recordOutput("CorAl/PivotMotorCurrent", pivotMotor.getOutputCurrent());
-        Logger.recordOutput("CorAl/IntakeMotorCurrent", intakeMotor.getOutputCurrent());
     }
 
     public void setPivotAngle(double targetAngle) {
-        // Clamp target angle to valid range
+        // Clamp target angle
         targetAngle = Math.min(Math.max(targetAngle, 
-                                CorAlConstants.PIVOT_MIN_ANGLE),
-                                CorAlConstants.PIVOT_MAX_ANGLE);
+                              CorAlConstants.PIVOT_MIN_ANGLE),
+                              CorAlConstants.PIVOT_MAX_ANGLE);
         
-        motorLock.lock();
-        try {
-            pivotController.setReference(targetAngle, ControlType.kPosition);
-            SmartDashboard.putNumber("Pivot Target Angle", targetAngle);
-            Logger.recordOutput("CorAl/TargetAngle", targetAngle);
-        } finally {
-            motorLock.unlock();
-        }
+        pivotController.setReference(targetAngle, ControlType.kPosition);
+        pivotTargetAngleWidget.getEntry().setDouble(targetAngle);
     }
 
     public void resetPivotEncoder() {
-        motorLock.lock();
-        try {
-            pivotEncoder.setPosition(0);
-            Logger.recordOutput("CorAl/PivotEncoderReset", true);
-        } finally {
-            motorLock.unlock();
-        }
+        pivotEncoder.setPosition(0);
     }
 
-    public void setIntakeMode(IntakeMode mode) {
-        motorLock.lock();
-        try {
-            switch (mode) {
-                case CORAL:
-                    intakeMotor.set(CorAlConstants.INTAKE_SPEED);
-                    break;
-                case ALGAE:
-                    intakeMotor.set(CorAlConstants.INTAKE_ALGAE_SPEED);
-                    break;
-                case STOP:
-                default:
-                    intakeMotor.set(0);
-                    break;
-            }
-            Logger.recordOutput("CorAl/IntakeMode", mode.name());
-        } finally {
-            motorLock.unlock();
-        }
+    public void setIntakeSpeed(double speed) {
+        intakeMotor.set(speed);
     }
 
     public void stopIntake() {
-        setIntakeMode(IntakeMode.STOP);
+        setIntakeSpeed(0);
     }
 
     public void manualPivotControl(double speed) {
-        // Apply deadband and limit speed
+        // Apply deadband and limits
         if (Math.abs(speed) < CorAlConstants.MANUAL_CONTROL_DEADBAND) {
             speed = 0;
         }
         speed = Math.min(Math.max(speed * CorAlConstants.MANUAL_SPEED_LIMIT, -1), 1);
 
-        motorLock.lock();
-        try {
-            // Only allow movement if within bounds or moving towards safe range
-            if (!isPivotOutOfBounds() || 
-                (getPivotAngle() <= CorAlConstants.PIVOT_MIN_ANGLE && speed > 0) ||
-                (getPivotAngle() >= CorAlConstants.PIVOT_MAX_ANGLE && speed < 0)) {
-                pivotMotor.set(speed);
-            } else {
-                stopPivot();
-            }
-            Logger.recordOutput("CorAl/ManualPivotSpeed", speed);
-        } finally {
-            motorLock.unlock();
+        // Safety checks
+        if (!isPivotOutOfBounds() || 
+            (getPivotAngle() <= CorAlConstants.PIVOT_MIN_ANGLE && speed > 0) ||
+            (getPivotAngle() >= CorAlConstants.PIVOT_MAX_ANGLE && speed < 0)) {
+            pivotMotor.set(speed);
+        } else {
+            stopPivot();
         }
     }
 
     public void stopPivot() {
-        motorLock.lock();
-        try {
-            pivotMotor.set(0);
-            Logger.recordOutput("CorAl/PivotStopped", true);
-        } finally {
-            motorLock.unlock();
-        }
+        pivotMotor.set(0);
     }
 
     private boolean isPivotOutOfBounds() {
@@ -220,22 +167,11 @@ public class CorAl extends SubsystemBase {
     }
 
     public double getPivotAngle() {
-        motorLock.lock();
-        try {
-            return pivotEncoder.getPosition();
-        } finally {
-            motorLock.unlock();
-        }
+        return pivotEncoder.getPosition();
     }
 
     public boolean isAtTargetAngle() {
-        return Math.abs(SmartDashboard.getNumber("Pivot Target Angle", 0) - getPivotAngle()) <= 
+        return Math.abs(pivotTargetAngleWidget.getEntry().getDouble(0) - getPivotAngle()) <= 
                CorAlConstants.PIVOT_ALLOWED_ERROR;
-    }
-
-    public enum IntakeMode {
-        CORAL,
-        ALGAE,
-        STOP
     }
 }
