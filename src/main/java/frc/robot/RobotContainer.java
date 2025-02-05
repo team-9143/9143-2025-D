@@ -21,10 +21,10 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import frc.robot.generated.TunerConstants;
-import frc.robot.Constants.ElevatorConstants;
+// import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.CorAlConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.Elevator;
+// import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.CorAl;
 
 public class RobotContainer {
@@ -46,7 +46,7 @@ public class RobotContainer {
     private final CommandXboxController operator_controller = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-    private final Elevator elevator = new Elevator();
+    // private final Elevator elevator = new Elevator();
     private final CorAl coral = new CorAl();
 
     /* Path follower */
@@ -95,6 +95,7 @@ public class RobotContainer {
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
+        /*
         // Set Target Positions: Use buttons to move the elevator to predefined positions
         operator_controller.povUp().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_MAX_POSITION), elevator));
         operator_controller.povDown().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_MIN_POSITION), elevator));
@@ -110,7 +111,6 @@ public class RobotContainer {
             elevator.manualControl(speed);
         }, elevator));
 
-        /*
         // CorAl retraction
         operator_controller.a().onTrue(Commands.runOnce(() -> {
             coral.setPivotAngle(CorAlConstants.BASE_ANGLE);
@@ -171,7 +171,7 @@ public class RobotContainer {
 
     public void disabledInit() {
         // Stop all subsystems when disabled
-        elevator.stopElevator();
+        // elevator.stopElevator();
         coral.stopPivot();
         coral.setIntakeSpeed(0);
     }

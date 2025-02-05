@@ -31,17 +31,16 @@ public final class Constants {
   // Constants for motor configurations, such as gear ratios and current limits.
   public static class MotorConstants {}
 
-  // Constants for the elevator subsystem (built off of FRC 3255)
+  /*
   public static class ElevatorConstants {
 
-    public static final int LEFT_ELEVATOR_ID = 58;
-    public static final int RIGHT_ELEVATOR_ID = 59;
+    public static final int ELEVATOR_LEFT_ID = 58;
+    public static final int ELEVATOR_RIGHT_ID = 59;
 
     // PID Constants
     public static final double ELEVATOR_kP = 0.4; // Proportional gain
     public static final double ELEVATOR_kI = 0.0; // Integral gain
     public static final double ELEVATOR_kD = 0.0; // Derivative gain
-    public static final double ELEVATOR_kF = 0.0; // Feedforward gain
 
     // Motion Profiling Constants
     public static final double ELEVATOR_MAX_VELOCITY = 1000; // Max velocity in units per second
@@ -64,6 +63,7 @@ public final class Constants {
     public static final double MANUAL_CONTROL_DEADBAND = 0.1; // Deadband for manual control input
     public static final double MANUAL_SPEED_LIMIT = 0.5; // Speed limit for manual control (0 to 1)
   }
+  */
 
   public final class CorAlConstants {
     // Motor IDs
