@@ -28,12 +28,12 @@ public class CorAl extends SubsystemBase {
 
     public CorAl() {
         // Initialize motors
-        pivotMotor = new SparkMax(CorAlConstants.PIVOT_MOTOR_ID, MotorType.kBrushless);
-        intakeMotor = new SparkMax(CorAlConstants.INTAKE_MOTOR_ID, MotorType.kBrushless);
+        pivotMotor = new SparkMax(CorAlConstants.CORAL_PIVOT_MOTOR_ID, MotorType.kBrushless);
+        intakeMotor = new SparkMax(CorAlConstants.CORAL_INTAKE_MOTOR_ID, MotorType.kBrushless);
 
         // Configure motors
-        configureMotor(pivotMotor, CorAlConstants.PIVOT_MOTOR_INVERTED, true);  // Pivot motor
-        configureMotor(intakeMotor, CorAlConstants.INTAKE_MOTOR_INVERTED, false); // Intake motor
+        configureMotor(pivotMotor, CorAlConstants.CORAL_PIVOT_MOTOR_INVERTED, true);  // Pivot motor
+        configureMotor(intakeMotor, CorAlConstants.CORAL_INTAKE_MOTOR_INVERTED, false); // Intake motor
 
         // Get encoders and controllers
         pivotEncoder = pivotMotor.getEncoder();
@@ -58,20 +58,20 @@ public class CorAl extends SubsystemBase {
         // Configure inversion and brake mode
         config.inverted(isInverted)
               .idleMode(IdleMode.kBrake)
-              .smartCurrentLimit(usePID ? CorAlConstants.PIVOT_CURRENT_LIMIT : CorAlConstants.INTAKE_CURRENT_LIMIT);
+              .smartCurrentLimit(usePID ? CorAlConstants.CORAL_PIVOT_CURRENT_LIMIT : CorAlConstants.CORAL_INTAKE_CURRENT_LIMIT);
 
         // Configure the encoder (only for pivot motor)
         if (usePID) {
-            config.encoder.positionConversionFactor(CorAlConstants.PIVOT_POSITION_CONVERSION)
-                  .velocityConversionFactor(CorAlConstants.PIVOT_VELOCITY_CONVERSION);
+            config.encoder.positionConversionFactor(CorAlConstants.CORAL_PIVOT_POSITION_CONVERSION)
+                  .velocityConversionFactor(CorAlConstants.CORAL_PIVOT_VELOCITY_CONVERSION);
         }
 
         // Configure closed loop controller (only for pivot motor)
         if (usePID) {
             config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                  .p(CorAlConstants.PIVOT_kP) // Position PID
-                  .i(CorAlConstants.PIVOT_kI)
-                  .d(CorAlConstants.PIVOT_kD)
+                  .p(CorAlConstants.CORAL_PIVOT_kP) // Position PID
+                  .i(CorAlConstants.CORAL_PIVOT_kI)
+                  .d(CorAlConstants.CORAL_PIVOT_kD)
                   .outputRange(-1, 1);
         }
 
@@ -120,8 +120,8 @@ public class CorAl extends SubsystemBase {
     public void setPivotAngle(double targetAngle) {
         // Clamp target angle
         targetAngle = Math.min(Math.max(targetAngle, 
-                              CorAlConstants.PIVOT_MIN_ANGLE),
-                              CorAlConstants.PIVOT_MAX_ANGLE);
+                              CorAlConstants.CORAL_PIVOT_MIN_ANGLE),
+                              CorAlConstants.CORAL_PIVOT_MAX_ANGLE);
         
         pivotController.setReference(targetAngle, ControlType.kPosition);
         pivotTargetAngleWidget.getEntry().setDouble(targetAngle);
@@ -141,15 +141,15 @@ public class CorAl extends SubsystemBase {
 
     public void manualPivotControl(double speed) {
         // Apply deadband and limits
-        if (Math.abs(speed) < CorAlConstants.MANUAL_CONTROL_DEADBAND) {
+        if (Math.abs(speed) < CorAlConstants.CORAL_MANUAL_CONTROL_DEADBAND) {
             speed = 0;
         }
-        speed = Math.min(Math.max(speed * CorAlConstants.MANUAL_SPEED_LIMIT, -1), 1);
+        speed = Math.min(Math.max(speed * CorAlConstants.CORAL_MANUAL_SPEED_LIMIT, -1), 1);
 
         // Safety checks
         if (!isPivotOutOfBounds() || 
-            (getPivotAngle() <= CorAlConstants.PIVOT_MIN_ANGLE && speed > 0) ||
-            (getPivotAngle() >= CorAlConstants.PIVOT_MAX_ANGLE && speed < 0)) {
+            (getPivotAngle() <= CorAlConstants.CORAL_PIVOT_MIN_ANGLE && speed > 0) ||
+            (getPivotAngle() >= CorAlConstants.CORAL_PIVOT_MAX_ANGLE && speed < 0)) {
             pivotMotor.set(speed);
         } else {
             stopPivot();
@@ -162,8 +162,8 @@ public class CorAl extends SubsystemBase {
 
     private boolean isPivotOutOfBounds() {
         double currentAngle = getPivotAngle();
-        return currentAngle < CorAlConstants.PIVOT_MIN_ANGLE || 
-               currentAngle > CorAlConstants.PIVOT_MAX_ANGLE;
+        return currentAngle < CorAlConstants.CORAL_PIVOT_MIN_ANGLE || 
+               currentAngle > CorAlConstants.CORAL_PIVOT_MAX_ANGLE;
     }
 
     public double getPivotAngle() {
@@ -172,6 +172,6 @@ public class CorAl extends SubsystemBase {
 
     public boolean isAtTargetAngle() {
         return Math.abs(pivotTargetAngleWidget.getEntry().getDouble(0) - getPivotAngle()) <= 
-               CorAlConstants.PIVOT_ALLOWED_ERROR;
+               CorAlConstants.CORAL_PIVOT_ALLOWED_ERROR;
     }
 }
