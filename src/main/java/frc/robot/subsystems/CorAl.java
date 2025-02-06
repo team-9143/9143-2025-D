@@ -1,15 +1,10 @@
 package frc.robot.subsystems;
 
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.DutyCycleOut;
 
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -18,26 +13,28 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CorAlConstants;
 
 public class CorAl extends SubsystemBase {
-    private final SparkMax pivotMotor;
-    private final SparkMax intakeMotor;
-    private final RelativeEncoder pivotEncoder;
-    private final SparkClosedLoopController pivotController;
+    private final TalonFX pivotMotor;
+    private final TalonFX intakeMotor;
     private final ShuffleboardTab tab;
     private final SimpleWidget pivotTargetAngleWidget;
     private final SimpleWidget resetPivotEncoderWidget;
 
+    // Control requests for the motors
+    private final PositionVoltage positionRequest;
+    private final DutyCycleOut percentRequest;
+
     public CorAl() {
         // Initialize motors
-        pivotMotor = new SparkMax(CorAlConstants.CORAL_PIVOT_MOTOR_ID, MotorType.kBrushless);
-        intakeMotor = new SparkMax(CorAlConstants.CORAL_INTAKE_MOTOR_ID, MotorType.kBrushless);
+        pivotMotor = new TalonFX(CorAlConstants.CORAL_PIVOT_MOTOR_ID);
+        intakeMotor = new TalonFX(CorAlConstants.CORAL_INTAKE_MOTOR_ID);
+
+        // Initialize control requests
+        positionRequest = new PositionVoltage(0).withSlot(0);
+        percentRequest = new DutyCycleOut(0);
 
         // Configure motors
         configureMotor(pivotMotor, CorAlConstants.CORAL_PIVOT_MOTOR_INVERTED, true);  // Pivot motor
         configureMotor(intakeMotor, CorAlConstants.CORAL_INTAKE_MOTOR_INVERTED, false); // Intake motor
-
-        // Get encoders and controllers
-        pivotEncoder = pivotMotor.getEncoder();
-        pivotController = pivotMotor.getClosedLoopController();
 
         // Initialize Shuffleboard tab and widgets
         tab = Shuffleboard.getTab("CorAl");
@@ -52,31 +49,36 @@ public class CorAl extends SubsystemBase {
         configureShuffleboard();
     }
 
-    private void configureMotor(SparkMax motor, boolean isInverted, boolean usePID) {
-        SparkMaxConfig config = new SparkMaxConfig();
+    private void configureMotor(TalonFX motor, boolean isInverted, boolean usePID) {
+        TalonFXConfiguration config = new TalonFXConfiguration();
 
         // Configure inversion and brake mode
-        config.inverted(isInverted)
-              .idleMode(IdleMode.kBrake)
-              .smartCurrentLimit(usePID ? CorAlConstants.CORAL_PIVOT_CURRENT_LIMIT : CorAlConstants.CORAL_INTAKE_CURRENT_LIMIT);
+        config.MotorOutput.Inverted = isInverted ? 
+            com.ctre.phoenix6.signals.InvertedValue.Clockwise_Positive : 
+            com.ctre.phoenix6.signals.InvertedValue.CounterClockwise_Positive;
+        config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        config.CurrentLimits.SupplyCurrentLimit = usePID ? 
+            CorAlConstants.CORAL_PIVOT_CURRENT_LIMIT : 
+            CorAlConstants.CORAL_INTAKE_CURRENT_LIMIT;
+        config.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-        // Configure the encoder (only for pivot motor)
+        // Configure the encoder and PID (only for pivot motor)
         if (usePID) {
-            config.encoder.positionConversionFactor(CorAlConstants.CORAL_PIVOT_POSITION_CONVERSION)
-                  .velocityConversionFactor(CorAlConstants.CORAL_PIVOT_VELOCITY_CONVERSION);
-        }
+            // Position and velocity scaling
+            config.Feedback.SensorToMechanismRatio = CorAlConstants.CORAL_PIVOT_POSITION_CONVERSION;
 
-        // Configure closed loop controller (only for pivot motor)
-        if (usePID) {
-            config.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                  .p(CorAlConstants.CORAL_PIVOT_kP) // Position PID
-                  .i(CorAlConstants.CORAL_PIVOT_kI)
-                  .d(CorAlConstants.CORAL_PIVOT_kD)
-                  .outputRange(-1, 1);
+            // PID configuration
+            config.Slot0.kP = CorAlConstants.CORAL_PIVOT_kP;
+            config.Slot0.kI = CorAlConstants.CORAL_PIVOT_kI;
+            config.Slot0.kD = CorAlConstants.CORAL_PIVOT_kD;
+            
+            // Motion Magic configuration if needed
+            config.MotionMagic.MotionMagicAcceleration = 100;
+            config.MotionMagic.MotionMagicCruiseVelocity = 50;
         }
 
         // Apply configuration
-        motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
+        motor.getConfigurator().apply(config);
     }
 
     private void configureShuffleboard() {
@@ -85,11 +87,11 @@ public class CorAl extends SubsystemBase {
            .withPosition(0, 1)
            .withSize(2, 1);
         
-        tab.addNumber("Pivot Current", pivotMotor::getOutputCurrent)
+        tab.addNumber("Pivot Current", () -> pivotMotor.getSupplyCurrent().getValueAsDouble())
            .withPosition(2, 1)
            .withSize(2, 1);
            
-        tab.addNumber("Intake Current", intakeMotor::getOutputCurrent)
+        tab.addNumber("Intake Current", () -> intakeMotor.getSupplyCurrent().getValueAsDouble())
            .withPosition(4, 1)
            .withSize(2, 1);
 
@@ -123,16 +125,16 @@ public class CorAl extends SubsystemBase {
                               CorAlConstants.CORAL_PIVOT_MIN_ANGLE),
                               CorAlConstants.CORAL_PIVOT_MAX_ANGLE);
         
-        pivotController.setReference(targetAngle, ControlType.kPosition);
+        pivotMotor.setControl(positionRequest.withPosition(targetAngle));
         pivotTargetAngleWidget.getEntry().setDouble(targetAngle);
     }
 
     public void resetPivotEncoder() {
-        pivotEncoder.setPosition(0);
+        pivotMotor.setPosition(0);
     }
 
     public void setIntakeSpeed(double speed) {
-        intakeMotor.set(speed);
+        intakeMotor.setControl(percentRequest.withOutput(speed));
     }
 
     public void stopIntake() {
@@ -150,18 +152,18 @@ public class CorAl extends SubsystemBase {
         if (!isPivotOutOfBounds() || 
             (getPivotAngle() <= CorAlConstants.CORAL_PIVOT_MIN_ANGLE && speed > 0) ||
             (getPivotAngle() >= CorAlConstants.CORAL_PIVOT_MAX_ANGLE && speed < 0)) {
-            pivotMotor.set(speed);
+            pivotMotor.setControl(percentRequest.withOutput(speed));
         } else {
             stopPivot();
         }
     }
 
     public void stopPivot() {
-        pivotMotor.set(0);
+        pivotMotor.setControl(percentRequest.withOutput(0));
     }
 
     public void stopRoller() {
-        intakeMotor.set(0);
+        intakeMotor.setControl(percentRequest.withOutput(0));
     }
 
     private boolean isPivotOutOfBounds() {
@@ -171,7 +173,7 @@ public class CorAl extends SubsystemBase {
     }
 
     public double getPivotAngle() {
-        return pivotEncoder.getPosition();
+        return pivotMotor.getPosition().getValueAsDouble();
     }
 
     public boolean isAtTargetAngle() {
