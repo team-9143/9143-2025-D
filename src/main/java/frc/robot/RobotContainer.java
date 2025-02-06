@@ -21,11 +21,14 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import frc.robot.generated.TunerConstants;
-// import frc.robot.Constants.ElevatorConstants;
+import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.CorAlConstants;
+import frc.robot.Constants.AlLowConstants;
+
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-// import frc.robot.subsystems.Elevator;
+import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.CorAl;
+import frc.robot.subsystems.AlLow;
 
 public class RobotContainer {
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -33,12 +36,12 @@ public class RobotContainer {
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
-            .withDeadband(MaxSpeed * 0.2).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 20% deadband
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
+        .withDeadband(MaxSpeed * 0.2).withRotationalDeadband(MaxAngularRate * 0.2) // Add a 20% deadband
+        .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
     private final SwerveRequest.RobotCentric forwardStraight = new SwerveRequest.RobotCentric()
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+        .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
@@ -46,10 +49,11 @@ public class RobotContainer {
     private final CommandXboxController operator_controller = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-    // private final Elevator elevator = new Elevator();
-    private final CorAl coral = new CorAl();
 
-    /* Path follower */
+    private final Elevator elevator = new Elevator();
+    private final CorAl coral = new CorAl();
+    private final AlLow allow = new AlLow();
+  
     private final SendableChooser<Command> autoChooser;
 
     public RobotContainer() {
@@ -94,23 +98,26 @@ public class RobotContainer {
         driver_controller.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+        
+        // Elevator preset heights
+        operator_controller.povDown().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L1_HEIGHT), elevator));
+        operator_controller.povLeft().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L2_HEIGHT), elevator));
+        operator_controller.povRight().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L3_HEIGHT), elevator));
+        operator_controller.povUp().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L4_HEIGHT), elevator));
 
-        /*
-        // Set Target Positions: Use buttons to move the elevator to predefined positions
-        operator_controller.povUp().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_MAX_POSITION), elevator));
-        operator_controller.povDown().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_MIN_POSITION), elevator));
+        // Elevator retraction to base height
+        operator_controller.x().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_BASE_HEIGHT), elevator));
 
-        // Reset Encoders: Use a button to reset the elevator encoders
-        operator_controller.leftTrigger().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
+        // Elevator encoder reset
+        operator_controller.a().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
 
-        // Bind joystick movement to manual control of the elevator
+        // Elevator manual control
         elevator.setDefaultCommand(Commands.run(() -> {
-            // Use the left joystick's Y-axis value to control the elevator's speed
-            double speed = -operator_controller.getLeftY(); // Negative to correct axis inversion
-            speed = Math.abs(speed) > ElevatorConstants.MANUAL_CONTROL_DEADBAND ? speed : 0; // Apply deadband
+            double speed = -operator_controller.getLeftY(); // Use left stick Y for manual control
             elevator.manualControl(speed);
         }, elevator));
-
+      
+      /*
         // CorAl retraction
         operator_controller.a().onTrue(Commands.runOnce(() -> {
             coral.setPivotAngle(CorAlConstants.BASE_ANGLE);
@@ -161,6 +168,30 @@ public class RobotContainer {
             double speed = -operator_controller.getRightX(); // Use right stick X for manual control
             coral.manualPivotControl(speed);
         }, coral));
+
+        // AlLow extension (with rollers activated)
+        operator_controller.rightBumper().whileTrue(Commands.run(() -> {
+            elevator.setPosition(AlLowConstants.ALLOW_INTAKE_ANGLE); // Extend to intaking angle
+            allow.setRollerSpeed(-1.0); // Spin rollers inward
+        }, elevator, allow));
+
+        // AlLow retraction (with rollers stopped)
+        operator_controller.leftBumper().onTrue(Commands.runOnce(() -> {
+            elevator.setPosition(AlLowConstants.ALLOW_BASE_ANGLE); // Retract to base angle
+            allow.stopRoller(); // Stop rollers
+        }, elevator, allow));
+
+        // AlLow ejection
+        operator_controller.b().whileTrue(Commands.run(() -> allow.setRollerSpeed(1.0), allow));
+
+        // AlLow pivot encoder reset
+        operator_controller.y().onTrue(Commands.runOnce(() -> allow.resetPivotEncoder(), allow).ignoringDisable(true));
+
+        // AlLow pivot manual control
+        allow.setDefaultCommand(Commands.run(() -> {
+            double speed = -operator_controller.getRightX(); // Use right stick X for pivot control
+            allow.manualPivotControl(speed);
+        }, allow));
         */
     }
 
@@ -171,8 +202,10 @@ public class RobotContainer {
 
     public void disabledInit() {
         // Stop all subsystems when disabled
-        // elevator.stopElevator();
+        elevator.stopElevator();
         coral.stopPivot();
         coral.setIntakeSpeed(0);
+        allow.stopPivot();
+        allow.stopRoller();
     }
 }
