@@ -160,6 +160,10 @@ public class CorAl extends SubsystemBase {
         pivotMotor.set(0);
     }
 
+    public void stopRoller() {
+        intakeMotor.set(0);
+    }
+
     private boolean isPivotOutOfBounds() {
         double currentAngle = getPivotAngle();
         return currentAngle < CorAlConstants.CORAL_PIVOT_MIN_ANGLE || 

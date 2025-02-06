@@ -204,7 +204,7 @@ public class RobotContainer {
         // Stop all subsystems when disabled
         elevator.stopElevator();
         coral.stopPivot();
-        coral.setIntakeSpeed(0);
+        coral.stopRoller();
         allow.stopPivot();
         allow.stopRoller();
     }
