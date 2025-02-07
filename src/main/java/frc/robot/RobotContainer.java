@@ -22,14 +22,12 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import frc.robot.generated.TunerConstants;
-import frc.robot.Constants.ElevatorConstants;
-import frc.robot.Constants.CorAlConstants;
-import frc.robot.Constants.AlLowConstants;
+import frc.robot.Constants.KitBotConstants;
+import frc.robot.Constants.AmperConstants;
 
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.Elevator;
-import frc.robot.subsystems.CorAl;
-import frc.robot.subsystems.AlLow;
+import frc.robot.subsystems.KitBot;
+import frc.robot.subsystems.Amper;
 
 public class RobotContainer {
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -50,10 +48,8 @@ public class RobotContainer {
     private final CommandXboxController operator_controller = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-
-    private final Elevator elevator = new Elevator();
-    private final CorAl coral = new CorAl();
-    private final AlLow allow = new AlLow();
+    public final KitBot kitbot = new KitBot();
+    public final Amper amper = new Amper();
 
     private final SendableChooser<Command> autoChooser;
     private final ShuffleboardTab autoTab = Shuffleboard.getTab("Auto");
@@ -103,101 +99,38 @@ public class RobotContainer {
         driver_controller.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
 
         drivetrain.registerTelemetry(logger::telemeterize);
-        
-        // Elevator preset heights
-        operator_controller.povDown().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L1_HEIGHT), elevator));
-        operator_controller.povLeft().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L2_HEIGHT), elevator));
-        operator_controller.povRight().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L3_HEIGHT), elevator));
-        operator_controller.povUp().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_CORAL_L4_HEIGHT), elevator));
 
-        // Elevator retraction to base height
-        operator_controller.x().onTrue(Commands.runOnce(() -> elevator.setPosition(ElevatorConstants.ELEVATOR_BASE_HEIGHT), elevator));
+        // KitBot bindings
+        operator_controller.leftBumper().whileTrue(Commands.run(() -> {
+            KitBot.feeder_motor.set(KitBotConstants.kIntakeFeederSpeed);
+            KitBot.launcher_motor.set(KitBotConstants.kIntakeLauncherSpeed);
+        }, kitbot));
 
-        // Elevator encoder reset
-        operator_controller.a().onTrue(Commands.runOnce(() -> elevator.resetEncoders(), elevator).ignoringDisable(true));
+        operator_controller.rightBumper().whileTrue(Commands.sequence(
+            Commands.runOnce(() -> KitBot.launcher_motor.set(KitBotConstants.kShootLauncherSpeed), kitbot),
+            Commands.waitSeconds(KitBotConstants.kFeederDelay),
+            Commands.run(() -> {
+                KitBot.launcher_motor.set(KitBotConstants.kShootLauncherSpeed);
+                KitBot.feeder_motor.set(KitBotConstants.kShootFeederSpeed);
+            }, kitbot)
+        ));
 
-        // Elevator manual control
-        elevator.setDefaultCommand(Commands.run(() -> {
-            double speed = -operator_controller.getLeftY(); // Use left stick Y for manual control
-            elevator.manualControl(speed);
-        }, elevator));
-      
-      /*
-        // CorAl retraction
-        operator_controller.a().onTrue(Commands.runOnce(() -> {
-            coral.setPivotAngle(CorAlConstants.BASE_ANGLE);
-            coral.setIntakeSpeed(0);
-        }, coral));
+        // Amper bindings
+        operator_controller.a().whileTrue(Commands.run(() -> 
+            Amper.amper_motor.setVoltage(AmperConstants.kAmperIntakeSpeed * 12), amper));
 
-        // Coral intaking
-        operator_controller.b().onTrue(Commands.runOnce(() -> {
-            coral.setPivotAngle(CorAlConstants.BASE_ANGLE);
-            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
-        }, coral));
+        operator_controller.y().whileTrue(Commands.run(() -> 
+            Amper.amper_motor.setVoltage(AmperConstants.kAmperScoreSpeed * 12), amper));
 
-        // Coral low scoring
         operator_controller.x().onTrue(Commands.runOnce(() -> {
-            coral.setPivotAngle(CorAlConstants.CORAL_LOW_ANGLE);
-            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
-        }, coral));
-
-        // Coral mid scoring
-        operator_controller.y().onTrue(Commands.runOnce(() -> {
-            coral.setPivotAngle(CorAlConstants.CORAL_MID_ANGLE);
-            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
-        }, coral));
-
-        // Coral high scoring
-        operator_controller.start().onTrue(Commands.runOnce(() -> {
-            coral.setPivotAngle(CorAlConstants.CORAL_HIGH_ANGLE);
-            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
-        }, coral));
-
-        // Algae intaking
-        operator_controller.leftBumper().onTrue(Commands.runOnce(() -> {
-            coral.setPivotAngle(CorAlConstants.ALGAE_INTAKE_ANGLE);
-            coral.setIntakeSpeed(CorAlConstants.ALGAE_INTAKE_SPEED);
-        }, coral));
-
-        // Algae scoring
-        operator_controller.rightBumper().onTrue(Commands.runOnce(() -> {
-            coral.setPivotAngle(CorAlConstants.ALGAE_SCORE_ANGLE);
-            coral.setIntakeSpeed(CorAlConstants.CORAL_INTAKE_SPEED);
-        }, coral));
-
-        // Pivot encoder reset
-        operator_controller.back().onTrue(Commands.runOnce(() -> coral.resetPivotEncoder(), coral).ignoringDisable(true));
-
-        // Pivot manual control
-        coral.setDefaultCommand(Commands.run(() -> {
-            double speed = -operator_controller.getRightX(); // Use right stick X for manual control
-            coral.manualPivotControl(speed);
-        }, coral));
-
-        // AlLow extension (with rollers activated)
-        operator_controller.rightBumper().whileTrue(Commands.run(() -> {
-            elevator.setPosition(AlLowConstants.ALLOW_INTAKE_ANGLE); // Extend to intaking angle
-            allow.setRollerSpeed(-1.0); // Spin rollers inward
-        }, elevator, allow));
-
-        // AlLow retraction (with rollers stopped)
-        operator_controller.leftBumper().onTrue(Commands.runOnce(() -> {
-            elevator.setPosition(AlLowConstants.ALLOW_BASE_ANGLE); // Retract to base angle
-            allow.stopRoller(); // Stop rollers
-        }, elevator, allow));
-
-        // AlLow ejection
-        operator_controller.b().whileTrue(Commands.run(() -> allow.setRollerSpeed(1.0), allow));
-
-        // AlLow pivot encoder reset
-        operator_controller.y().onTrue(Commands.runOnce(() -> allow.resetPivotEncoder(), allow).ignoringDisable(true));
-
-        // AlLow pivot manual control
-        allow.setDefaultCommand(Commands.run(() -> {
-            double speed = -operator_controller.getRightX(); // Use right stick X for pivot control
-            allow.manualPivotControl(speed);
-        }, allow));
-        */
+            if (!amper.isHoldPositionActive) {
+                Amper.amper_motor.setVoltage(AmperConstants.kAmperHoldPositionSpeed * 12);
+                amper.isHoldPositionActive = true;
+            } else {
+                Amper.amper_motor.set(0);
+                amper.isHoldPositionActive = false;
+            }
+        }, amper));
     }
 
     public Command getAutonomousCommand() {
@@ -206,11 +139,8 @@ public class RobotContainer {
     }
 
     public void disabledInit() {
-        // Stop all subsystems when disabled
-        elevator.stopElevator();
-        coral.stopPivot();
-        coral.stopRoller();
-        allow.stopPivot();
-        allow.stopRoller();
+        Amper.amper_motor.stopMotor();
+        KitBot.feeder_motor.stopMotor();
+        KitBot.launcher_motor.stopMotor();
     }
 }
