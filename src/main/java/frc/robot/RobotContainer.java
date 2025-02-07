@@ -22,12 +22,14 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import frc.robot.generated.TunerConstants;
-import frc.robot.Constants.KitBotConstants;
-import frc.robot.Constants.AmperConstants;
+import frc.robot.Constants.KitBot25Constants;
+import frc.robot.Constants.KitBot24Constants;
+import frc.robot.Constants.Amper24Constants;
 
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.KitBot;
-import frc.robot.subsystems.Amper;
+import frc.robot.subsystems.KitBot25;
+import frc.robot.subsystems.KitBot24;
+import frc.robot.subsystems.Amper24;
 
 public class RobotContainer {
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -48,8 +50,9 @@ public class RobotContainer {
     private final CommandXboxController operator_controller = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-    public final KitBot kitbot = new KitBot();
-    public final Amper amper = new Amper();
+    public final KitBot25 kitbot25 = new KitBot25();
+    public final KitBot24 kitbot24 = new KitBot24();
+    public final Amper24 amper = new Amper24();
 
     private final SendableChooser<Command> autoChooser;
     private final ShuffleboardTab autoTab = Shuffleboard.getTab("Auto");
@@ -100,34 +103,41 @@ public class RobotContainer {
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
-        // KitBot bindings
-        operator_controller.leftBumper().whileTrue(Commands.run(() -> {
-            KitBot.feeder_motor.set(KitBotConstants.kIntakeFeederSpeed);
-            KitBot.launcher_motor.set(KitBotConstants.kIntakeLauncherSpeed);
-        }, kitbot));
+        // KitBot 2025 eject
+        operator_controller.b()
+        .whileTrue(kitbot25.runRoller(kitbot25, () -> KitBot25Constants.ROLLER_EJECT_VALUE, () -> 0));
 
+        // KitBot 2024 intake
+        operator_controller.leftBumper().whileTrue(Commands.run(() -> {
+            KitBot24.feeder_motor.set(KitBot24Constants.kIntakeFeederSpeed);
+            KitBot24.launcher_motor.set(KitBot24Constants.kIntakeLauncherSpeed);
+        }, kitbot24));
+
+        // KitBot 2024 shoot
         operator_controller.rightBumper().whileTrue(Commands.sequence(
-            Commands.runOnce(() -> KitBot.launcher_motor.set(KitBotConstants.kShootLauncherSpeed), kitbot),
-            Commands.waitSeconds(KitBotConstants.kFeederDelay),
+            Commands.runOnce(() -> KitBot24.launcher_motor.set(KitBot24Constants.kShootLauncherSpeed), kitbot24),
+            Commands.waitSeconds(KitBot24Constants.kFeederDelay),
             Commands.run(() -> {
-                KitBot.launcher_motor.set(KitBotConstants.kShootLauncherSpeed);
-                KitBot.feeder_motor.set(KitBotConstants.kShootFeederSpeed);
-            }, kitbot)
+                KitBot24.launcher_motor.set(KitBot24Constants.kShootLauncherSpeed);
+                KitBot24.feeder_motor.set(KitBot24Constants.kShootFeederSpeed);
+            }, kitbot24)
         ));
 
-        // Amper bindings
+        // Amper 2024 intake
         operator_controller.a().whileTrue(Commands.run(() -> 
-            Amper.amper_motor.setVoltage(AmperConstants.kAmperIntakeSpeed * 12), amper));
+            Amper24.amper_motor.setVoltage(Amper24Constants.kAmperIntakeSpeed * 12), amper));
 
+        // Amper 2024 score
         operator_controller.y().whileTrue(Commands.run(() -> 
-            Amper.amper_motor.setVoltage(AmperConstants.kAmperScoreSpeed * 12), amper));
+            Amper24.amper_motor.setVoltage(Amper24Constants.kAmperScoreSpeed * 12), amper));
 
+        // Amper 2024 hold position
         operator_controller.x().onTrue(Commands.runOnce(() -> {
             if (!amper.isHoldPositionActive) {
-                Amper.amper_motor.setVoltage(AmperConstants.kAmperHoldPositionSpeed * 12);
+                Amper24.amper_motor.setVoltage(Amper24Constants.kAmperHoldPositionSpeed * 12);
                 amper.isHoldPositionActive = true;
             } else {
-                Amper.amper_motor.set(0);
+                Amper24.amper_motor.set(0);
                 amper.isHoldPositionActive = false;
             }
         }, amper));
@@ -139,8 +149,9 @@ public class RobotContainer {
     }
 
     public void disabledInit() {
-        Amper.amper_motor.stopMotor();
-        KitBot.feeder_motor.stopMotor();
-        KitBot.launcher_motor.stopMotor();
+        KitBot25.rollerMotor.stopMotor();
+        KitBot24.feeder_motor.stopMotor();
+        KitBot24.launcher_motor.stopMotor();
+        Amper24.amper_motor.stopMotor();
     }
 }

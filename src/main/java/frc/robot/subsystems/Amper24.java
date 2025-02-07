@@ -14,28 +14,28 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.AmperConstants;
+import frc.robot.Constants.Amper24Constants;
 
-public class Amper extends SubsystemBase {
+public class Amper24 extends SubsystemBase {
 
     public static final SparkMax amper_motor = 
-        new SparkMax(AmperConstants.kAmperID, MotorType.kBrushed);
+        new SparkMax(Amper24Constants.kAmperID, MotorType.kBrushed);
     private static final SparkMaxConfig motorConfig = new SparkMaxConfig();
 
     static {
         // Amper motor setup
         motorConfig.idleMode(IdleMode.kBrake)
-                  .smartCurrentLimit(AmperConstants.kAmperCurrentLimit);
+                  .smartCurrentLimit(Amper24Constants.kAmperCurrentLimit);
         
         amper_motor.configure(motorConfig, 
                             ResetMode.kResetSafeParameters, 
                             PersistMode.kNoPersistParameters);
     }
 
-    private static final Amper m_amper = new Amper();
+    private static final Amper24 m_amper = new Amper24();
 
     // Returns the singleton instance
-    public static Amper getInstance() {
+    public static Amper24 getInstance() {
         return m_amper;
     }
 
@@ -44,7 +44,7 @@ public class Amper extends SubsystemBase {
     // Method to set the motor for intake mode.
     public Command getIntakeCommand() {
         return Commands.startEnd(
-            () -> amper_motor.setVoltage(AmperConstants.kAmperIntakeSpeed * 12),
+            () -> amper_motor.setVoltage(Amper24Constants.kAmperIntakeSpeed * 12),
             () -> amper_motor.set(0),
             this);
     }
@@ -52,7 +52,7 @@ public class Amper extends SubsystemBase {
     // Method to set the motor for scoring mode.
     public Command getScoreCommand() {
         return Commands.startEnd(
-            () -> amper_motor.setVoltage(AmperConstants.kAmperScoreSpeed * 12),
+            () -> amper_motor.setVoltage(Amper24Constants.kAmperScoreSpeed * 12),
             () -> amper_motor.set(0),
             this);
     }
@@ -60,7 +60,7 @@ public class Amper extends SubsystemBase {
     // Method to set the motor at stall speed.
     public Command getHoldPositionCommand() {
         return Commands.startEnd(
-            () -> amper_motor.setVoltage(AmperConstants.kAmperHoldPositionSpeed * 12),
+            () -> amper_motor.setVoltage(Amper24Constants.kAmperHoldPositionSpeed * 12),
             () -> amper_motor.set(0),
             this);
     }

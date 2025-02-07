@@ -13,7 +13,7 @@ public final class Constants {
   // Constants defining IDs and ports for motors, sensors, and other devices.
   public static class DeviceConstants {}
 
-  public static class AmperConstants {
+  public static class Amper24Constants {
     // CAN ID for the Spark MAX motor controller.
     public static final int kAmperID = 4;
 
@@ -26,7 +26,7 @@ public final class Constants {
     public static final double kAmperHoldPositionSpeed = 0.025;
   }
 
-  public static class KitBotConstants {
+  public static class KitBot24Constants {
     // CAN IDs for the Spark MAX motor controllers.
     public static final int kFeederID = 5;
     public static final int kLauncherID = 6;
@@ -43,5 +43,12 @@ public final class Constants {
 
     // Delay for starting the feeder wheel to allow the launcher wheel to spin up.
     public static final double kFeederDelay = 1;
+  }
+
+  public static final class KitBot25Constants {
+    public static final int ROLLER_MOTOR_ID = 5;
+    public static final int ROLLER_MOTOR_CURRENT_LIMIT = 60;
+    public static final double ROLLER_MOTOR_VOLTAGE_COMP = 10;
+    public static final double ROLLER_EJECT_VALUE = 0.44;
   }
 }
