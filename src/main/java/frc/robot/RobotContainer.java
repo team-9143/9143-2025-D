@@ -104,7 +104,13 @@ public class RobotContainer {
         operator_controller.leftBumper().whileTrue(Commands.run(() -> {
             KitBot.feeder_motor.set(KitBotConstants.kIntakeFeederSpeed);
             KitBot.launcher_motor.set(KitBotConstants.kIntakeLauncherSpeed);
-        }, kitbot));
+        }, kitbot)
+        ).onFalse(
+            Commands.runOnce(() -> {
+                KitBot.feeder_motor.stopMotor();
+                KitBot.launcher_motor.stopMotor();
+            }, kitbot)
+        );
 
         operator_controller.rightBumper().whileTrue(Commands.sequence(
             Commands.runOnce(() -> KitBot.launcher_motor.set(KitBotConstants.kShootLauncherSpeed), kitbot),
@@ -113,14 +119,29 @@ public class RobotContainer {
                 KitBot.launcher_motor.set(KitBotConstants.kShootLauncherSpeed);
                 KitBot.feeder_motor.set(KitBotConstants.kShootFeederSpeed);
             }, kitbot)
-        ));
+            )
+        
+            ).onFalse(
+                Commands.runOnce(() -> {
+                    KitBot.feeder_motor.stopMotor();
+                    KitBot.launcher_motor.stopMotor();
+                }, kitbot)
+            );
 
         // Amper bindings
         operator_controller.a().whileTrue(Commands.run(() -> 
-            Amper.amper_motor.setVoltage(AmperConstants.kAmperIntakeSpeed * 12), amper));
+            Amper.amper_motor.setVoltage(AmperConstants.kAmperIntakeSpeed * 12), amper)
+            ).onFalse(
+                Commands.runOnce(() -> 
+                Amper.amper_motor.stopMotor(), amper)
+            );
 
         operator_controller.y().whileTrue(Commands.run(() -> 
-            Amper.amper_motor.setVoltage(AmperConstants.kAmperScoreSpeed * 12), amper));
+            Amper.amper_motor.setVoltage(AmperConstants.kAmperScoreSpeed * 12), amper)
+            ).onFalse(
+                Commands.runOnce(() -> 
+                Amper.amper_motor.stopMotor(), amper)
+            );
 
         operator_controller.x().onTrue(Commands.runOnce(() -> {
             if (!amper.isHoldPositionActive) {
