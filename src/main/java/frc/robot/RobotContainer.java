@@ -73,9 +73,9 @@ public class RobotContainer {
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
-                drive.withVelocityX(-driver_controller.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-driver_controller.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-driver_controller.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+                drive.withVelocityX(-driver_controller.getLeftY() * MaxSpeed * 0.5) // Drive forward with negative Y (forward)
+                    .withVelocityY(-driver_controller.getLeftX() * MaxSpeed * 0.5) // Drive left with negative X (left)
+                    .withRotationalRate(driver_controller.getRightX() * MaxAngularRate * 0.5) // Drive counterclockwise with X (right)
             )
         );
 
@@ -103,9 +103,29 @@ public class RobotContainer {
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
-        // KitBot 2025 eject
+        // KitBot 2025 first piece eject
         operator_controller.b()
-        .whileTrue(kitbot25.runRoller(kitbot25, () -> KitBot25Constants.ROLLER_EJECT_VALUE, () -> 0));
+        .whileTrue(kitbot25.runRoller(kitbot25, () -> KitBot25Constants.ROLLER_FIRST_EJECT_VALUE, () -> 0)).onFalse(
+            Commands.runOnce(() -> {
+                KitBot25.rollerMotor.stopMotor();
+            }, kitbot25)
+        );
+
+        // KitBot 2025 stacked piece eject
+        operator_controller.y()
+        .whileTrue(kitbot25.runRoller(kitbot25, () -> KitBot25Constants.ROLLER_STACKED_EJECT_VALUE, () -> 0)).onFalse(
+            Commands.runOnce(() -> {
+                KitBot25.rollerMotor.stopMotor();
+            }, kitbot25)
+        );
+
+        // KitBot 2025 re-align
+        operator_controller.x()
+        .whileTrue(kitbot25.runRoller(kitbot25, () -> -KitBot25Constants.ROLLER_FIRST_EJECT_VALUE, () -> 0)).onFalse(
+            Commands.runOnce(() -> {
+                KitBot25.rollerMotor.stopMotor();
+            }, kitbot25)
+        );
 
         // KitBot 2024 intake
         operator_controller.leftBumper().whileTrue(Commands.run(() -> {

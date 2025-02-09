@@ -21,8 +21,8 @@ public class KitBot25 extends SubsystemBase {
   public static SparkMax rollerMotor;
   
     public KitBot25() {
-      // Set up the roller motor as a brushed motor
-      rollerMotor = new SparkMax(KitBot25Constants.ROLLER_MOTOR_ID, MotorType.kBrushed);
+      // Set up the roller motor as a brushless motor
+      rollerMotor = new SparkMax(KitBot25Constants.ROLLER_MOTOR_ID, MotorType.kBrushless);
 
     // Set can timeout. Because this project only sets parameters once on
     // construction, the timeout can be long without blocking robot operation. Code

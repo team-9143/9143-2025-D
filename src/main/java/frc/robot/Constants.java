@@ -28,7 +28,7 @@ public final class Constants {
 
   public static class KitBot24Constants {
     // CAN IDs for the Spark MAX motor controllers.
-    public static final int kFeederID = 5;
+    public static final int kFeederID = 7;
     public static final int kLauncherID = 6;
 
     // Current limit for the Spark MAX motor controllers.
@@ -49,6 +49,7 @@ public final class Constants {
     public static final int ROLLER_MOTOR_ID = 5;
     public static final int ROLLER_MOTOR_CURRENT_LIMIT = 60;
     public static final double ROLLER_MOTOR_VOLTAGE_COMP = 10;
-    public static final double ROLLER_EJECT_VALUE = 0.44;
+    public static final double ROLLER_FIRST_EJECT_VALUE = -0.2;
+    public static final double ROLLER_STACKED_EJECT_VALUE = -0.3;
   }
 }
